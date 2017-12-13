@@ -1,4 +1,5 @@
 # Resilient City Toolkit
+by David Wasserman, Geoff Taylor and Michael Flaxman
 
 ![alt tag](https://github.com/geodesign/slr/blob/master/SLR_Adaptation_Project/images/CE2017.1_Demo_Scene.gif)
 
