@@ -1,5 +1,7 @@
 # Resilient City Toolkit
 
+![alt tag](https://github.com/geodesign/slr/blob/master/SLR_Adaptation_Project/images/CE2017.1_Demo_Scene.gif)
+
 ## Overview
 The Resilient City Toolkit contains a set of tools for visualizing risks to urban infrastructure, and for adapting urban forms to reduce such risks.  General methods include re-sighting, landscape-scale hazard mitigation, and building-scale adaptation.  The intial release contains tools primarily intended for flood resilience.  For resilience to flooding, we have implemented New York City, FEMA and EPA low impact development (LID) recommendations.
 
@@ -17,6 +19,10 @@ Primary requirements are:
 ## Process
 
 These tools are organized to follow a geodesign process.  The general idea is to first build an existing conditions scenario, and then a set of alternative futures.  The futures vary along two primary dimensions: biophysical stressors, and adaptation actions.  Stressors can include various potential flood depths, or levels of sea level rise.  Adaptation measures include building elevation, internal building adaptation measures, and building removal, among others.  Importantly, adapation measures can be applied at an individual building scale, for a zone of interest, or for species sets of conditions across thousands of buildings.  
+
+### Example of Interactive Exploration of Adaption Measures
+
+![alt tag](https://github.com/geodesign/slr/blob/master/SLR_Adaptation_Project/images/CE2017.1_Adaptation_Options.gif)
 
 ## Outputs
 
