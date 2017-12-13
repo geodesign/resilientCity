@@ -3,7 +3,10 @@
 ## Overview
 The Resilient City Toolkit contains a set of tools for visualizing risks to urban infrastructure, and for adapting urban forms to reduce such risks.  General methods include re-sighting, landscape-scale hazard mitigation, and building-scale adaptation.  The intial release contains tools primarily intended for flood resilience.  For resilience to flooding, we have implemented New York City, FEMA and EPA low impact development (LID) recommendations.
 
-The implementation of the Toolkit is based on a combination of web services and ESRI CityEngine 3D rules.  The web services are used to organize required base data, including adopting it to a single standard data schema used by downstream tools.  The intent is to provide a starting point for any community using readily-available national or international datasets.  Often a community has better local data, and this can be incorporated simply by adjusting that data to fit the RCT schema.  Primary requirements are:
+The implementation of the Toolkit is based on a combination of web services and ESRI CityEngine 3D rules.  The web services are used to organize required base data, including adopting it to a single standard data schema used by downstream tools.  The intent is to provide a starting point for any community using readily-available national or international datasets.  Often a community has better local data, and this can be incorporated simply by adjusting that data to fit the RCT schema.  
+
+## Inputs
+Primary requirements are:
 
 1) Elevation data - Defaults to ESRI elevation service, for the US based on USGS National Elevation Data.  Best practice is to use a digital elevation model based on LIDAR if available.
 
