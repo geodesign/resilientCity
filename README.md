@@ -15,7 +15,7 @@ Primary requirements are:
 
 2) Parcel boundaries OR building footprints OR building 3d models.  Best practices here vary based on local data availability.
 
-3) Flood Planes OR FEMA DFIRM inundation models OR SLR simulations.  US defaults are FEMA DFIRM where available.  Best practices include tidally-corrected "bathtub" models of coastal innundation, or outputs of dynamic coastal models such as NOAA SLOSH were available.
+3) Flood Plains OR FEMA DFIRM inundation models OR SLR simulations.  US defaults are FEMA DFIRM where available.  Best practices include tidally-corrected "bathtub" models of coastal innundation, or outputs of dynamic coastal models such as NOAA SLOSH were available.
 
 ## Process
 

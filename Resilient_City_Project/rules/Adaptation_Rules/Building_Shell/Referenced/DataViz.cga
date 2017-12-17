@@ -1,0 +1,107 @@
+/**
+ * File:    DataViz.cga
+ * Created: 22 Jan 2015 17:38:43 GMT
+ * Author:  David Wasserman
+ */
+version "2014.1"
+#Attributes
+@Order(1)@Group("Data Attributes",1)@Range(0,1)@Description("This attribute represents the name your data should take normalized to the set min and max ranges will need to be mapped with the connection editor.")
+#Rename# attribute if mapping to an object/shape attribute. 
+#To rename correclty right click the attribute when highlighted and select "Rename"
+#Make sure "Update References" is selected!!!
+attr data =0
+#Might need to change this attribute name above from data to same as data to connect via the editor
+#Data attribute once connected should be normalized
+#Reporting for data will tell you the min and max value of your selection
+@Order(2)@Range(true,false)@Description("Will normalize data based on set min and max data value. Any data above or below max is set to 0 or 1.")
+attr Normalize=true
+@Order(3)@Range(0,100000)@Description("Minimum data value for normalized data set. Can be set based on STD,and if data is above value will be set to highest value.")
+attr Data_Min_Value=0
+@Order(4)@Range(0,100000)@Description("Maximum data value for normalized data set. Can be set based on STD,and if data is above value will be set to highest value.")
+attr Data_Max_Value=1
+@Group("Data Object Attribute",2)@Order(1)@File("dae","dxf","gdb","kml","kmz","obj","osm","shp")@Description("Data object attribute controls the object that is chosen to represent the data above your base shape. Make sure it is aligned to Y Axis.")
+attr Data_Object="builtin:cube"
+@Order(2)@Range("whiteToBlack","greenToRed","yellowToRed","redToBlue","orangeToBlue","brownToBlue","spectrum")@Description("Choose the color gradient for the object color scale.")
+attr Color_Range="redToBlue"
+@Order(3)@Range(true,false) @Description("Inverts color range by setting the value in the color ramp == 1- normalized data.")
+attr Invert_Color=false
+@Order(3)@Description("When true, textures are on display, when false textures are removed. If true it deletes an unused UVset (see comments for details).")
+attr Display_Textures=false
+@Order(4)@Range(5,500)@Description("Sets the height in meters the data object is raised above the start shape in the Y direction.")
+attr Height=40
+@Order(5)@Range(0,360)@Description("Rotates the scope along the Y axis for the selected objects (horizontal rotation)")
+attr Y_Rotation=90
+@Order(6)@Range(true,false)@Description("Makes the rotation of the inserted objects randomized between 0 and 360 degrees.")
+attr Random_Y_Rotation=false
+@Order(7)@Range(0,360) @Description("Rotates the scope along the X axis for the selected objects (vertical rotation)")
+attr X_Rotation=0
+@Order(8)@Range(0,100)@Description("The Adjustment Factor adjusts the size of the object representation as a multiplier. Minimum size can be set in rule.") 
+attr Adjuster= 20
+@Order(9)@Range(0,20) @Description("Represents the fraction of the original scope the lowest value object is.")
+attr Minimum_Size=1 #Minimum size of inserted objects is 1.5 * original scope
+#Hidden Attributes-current working scopes
+@Hidden
+attr scopex=0
+@Hidden
+attr scopey=0
+@Hidden
+attr scopez=0
+
+
+#Functions
+norm_Data= case Normalize: normalValue( data ,Data_Max_Value, Data_Min_Value)else: data
+# Normalization to 0 to 1 range.
+_Rotation= case Random_Y_Rotation: rand(0,360) else: Y_Rotation
+
+#Constants
+
+const NormalMin = 0
+const NormalMax = 1
+const _Texture_Switch		= case Display_Textures: 4 else: 0 # This switch will delete the opacity map UV if texturing is on- transparencys mess with the tree transparencies anyway. If you want UVset 4 you can change the 4 to a 999 and it should work...but only through an unhandled exception
+#Use the following functions if you had data that can be fed into the _Rank functions:
+dataValueAdj(dataValueOriginal,Max_Data_Value, Min_Data_Value) = 
+case dataValueOriginal < Min_Data_Value: Min_Data_Value
+case dataValueOriginal > Max_Data_Value: Max_Data_Value
+else: dataValueOriginal
+
+normalValue(dataValue,Max_Data_Value,Min_Data_Value) = 
+NormalMin + (((dataValueAdj(dataValue,Max_Data_Value,Min_Data_Value) - Min_Data_Value ) 
+* ( NormalMax - NormalMin ))
+/ ( Max_Data_Value - Min_Data_Value))
+# Put all your building code here. 
+#Call the Data_Vis Rule on the shape you want to call it on. 
+
+############
+#Rules
+Lot-->
+	#set( data ,geometry.area)#Can be used for testing purposes if you want to experiment
+	Data_Viz  # Call next rule
+Data_Viz-->
+report("Described Data", data )#Reports raw data- make sure rename updates references for this to work. 
+report("Described Normalized Data",norm_Data) #Reports normalized values
+s(0,0,0)#Sets intitial scope of lot to 0
+center(xz)#centers intitially to lot-without this the next centering does nto have the same effect for final setting
+alignScopeToAxes(x)#Aligns to world X
+alignScopeToAxes(y)#Aligns to world y
+t(0,Height,0)#Raises the object up along the y Axis. 
+rotateScope(X_Rotation, _Rotation, 0)#Once aligned, any rotation applies to all of them to give  them the same alignment. 
+i(Data_Object) #Inserts the object of interest
+deleteUV(_Texture_Switch)#Deletes any textures (color maps) of the object if the switch is active. 
+Colorizer  # Call next rule
+
+Colorizer-->
+	case Invert_Color:
+		color(colorRamp(Color_Range,1-norm_Data))#Determines the color of the obj
+		Scope_Asset # Call next rule
+	else:
+		color(colorRamp(Color_Range,norm_Data))#Determines the color of the obj
+		Scope_Asset # Call next rule
+Scope_Asset-->
+	set(scopex,scope.sx)#sets scopes for each axis equal to the inserted object's scope
+	set(scopey,scope.sy)#sets scopes for each axis equal to the inserted object's scope
+	set(scopez,scope.sz)#sets scopes for each axis equal to the inserted object's scope
+	Scoper
+Scoper-->
+	s((scopex*(norm_Data)*Adjuster)+Minimum_Size*scopex,(scopey*(norm_Data)*Adjuster)+Minimum_Size*scopey,(scopez*(norm_Data)*Adjuster)+Minimum_Size*scopez)#adjusts scope based on the adjuster, minimum size, data magnitude, and the objects original scope. 
+	center(xz) #Does another center on the final object (after size is adjusted).  
+	

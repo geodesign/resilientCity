@@ -1,0 +1,423 @@
+/**
+ * File:    Usage_Typology.cga
+ * Created: 28 Sep 2014 20:06:42 GMT
+ * Author:  chri7180
+ * Details: ESRI Redlands Derivative Work
+ */
+
+version "2014.1"
+
+
+
+@Hidden
+attr typology = ""
+
+@Group("USAGE PROFILE", 10) @Order(10)
+@Range("Agriculture", "Assembly", "Education", "Industrial", "Retail", "Office", "Public", "Residential", "Service", "Storage", "Transportation", "Utility", "Unknown")
+attr Usage_1 = getUsage1
+
+@Group("USAGE PROFILE") @Order(11)
+@Range(0,100)
+attr Usage_1_Percent = getUsage1Percent
+
+@Group("USAGE PROFILE") @Order(20)
+@Range("Agriculture", "Assembly", "Education", "Industrial", "Retail", "Office", "Public", "Residential", "Service", "Storage", "Transportation", "Utility", "Unknown")
+attr Usage_2 = getUsage2 
+
+@Group("USAGE PROFILE") @Order(21)
+@Range(0,100)
+attr Usage_2_Percent = getUsage2Percent
+
+@Group("USAGE PROFILE") @Order(30)
+@Range("Agriculture", "Assembly", "Education", "Industrial", "Retail", "Office", "Public", "Residential", "Service", "Storage", "Transportation", "Utility", "Unknown")
+attr Usage_3 = getUsage3 
+
+@Group("USAGE PROFILE") @Order(31)
+@Range(0,100)
+attr Usage_3_Percent = getUsage3Percent
+
+@Group("USAGE PROFILE") @Order(40)
+@Range("Agriculture", "Assembly", "Education", "Industrial", "Retail", "Office", "Public", "Residential", "Service", "Storage", "Transportation", "Utility", "Unknown")
+attr Usage_4 = getUsage4 
+
+@Group("USAGE PROFILE") @Order(41)
+@Range(0,100)
+attr Usage_4_Percent = getUsage4Percent 
+
+@Group("USAGE PROFILE") @Order(50)
+@Range("Agriculture", "Assembly", "Education", "Industrial", "Retail", "Office", "Public", "Residential", "Service", "Storage", "Transportation", "Utility", "Unknown")
+attr Usage_5 = getUsage5
+
+@Group("USAGE PROFILE") @Order(51)
+@Range(0,100)
+attr Usage_5_Percent = getUsage5Percent
+
+#############################################
+
+@Group ("TARGET PERFORMANCE", 20) @Order(1) @Range(0,100)
+attr Reduction_Electric = 0
+
+@Group ("TARGET PERFORMANCE") @Order(2) @Range(0,100)
+attr Reduction_WaterPotable = 0
+
+@Group ("TARGET PERFORMANCE") @Order(3) @Range(0,100)
+attr Reduction_WaterNonPotable = 0
+
+@Group ("TARGET PERFORMANCE") @Order(4) @Range(0,100)
+attr Reduction_Gas = 0
+
+@Group ("TARGET PERFORMANCE") @Order(10) @Range(0,100)
+attr Reduction_Waste_Solid = 0
+
+@Group ("TARGET PERFORMANCE") @Order(11) @Range(0,100)
+attr Reduction_Waste_Black_Water = 0
+
+@Group ("TARGET PERFORMANCE") @Order(12) @Range(0,100)
+attr Reduction_Waste_Gray_Water = 0
+
+@Group ("TARGET PERFORMANCE") @Order(13) @Range(0,100)
+attr Reduction_Waste_Recyclable = 0
+
+
+#@Group ("TARGET PERFORMANCE") @Order(10) @Range(0,100)
+#attr Graywater_Recycled = 0
+
+@Group("BUILDING COST ESTIMATION",30) @Order(0)
+attr Cost_Per_M2 = 1400
+
+@Group("BUILDING COST ESTIMATION") @Order(1)
+@Range(0,100)
+attr Reduction_Construction_Waste = 0
+
+##################################################
+
+
+
+
+
+
+
+
+
+
+
+getUsage1 = extractUsage(listItem(getUsageProfilePerTypology( typology ), 0))
+getUsage2 = extractUsage(listItem(getUsageProfilePerTypology( typology ), 1))
+getUsage3 = extractUsage(listItem(getUsageProfilePerTypology( typology ), 2))
+getUsage4 = extractUsage(listItem(getUsageProfilePerTypology( typology ), 3))
+getUsage5 = extractUsage(listItem(getUsageProfilePerTypology( typology ), 4))
+getUsage1Percent = extractPercent(listItem(getUsageProfilePerTypology( typology ), 0))
+getUsage2Percent = extractPercent(listItem(getUsageProfilePerTypology( typology ), 1))
+getUsage3Percent = extractPercent(listItem(getUsageProfilePerTypology( typology ), 2))
+getUsage4Percent = extractPercent(listItem(getUsageProfilePerTypology( typology ), 3))
+getUsage5Percent = extractPercent(listItem(getUsageProfilePerTypology( typology ), 4))
+
+getUsage1Start = 0
+getUsage1End = Usage_1_Percent
+getUsage2Start = getUsage1End 
+getUsage2End = Usage_2_Percent + getUsage2Start 
+getUsage3Start = getUsage2End 
+getUsage3End = Usage_3_Percent + getUsage3Start
+getUsage4Start = getUsage3End 
+getUsage4End = Usage_4_Percent + getUsage4Start
+getUsage5Start = getUsage4End 
+getUsage5End = Usage_5_Percent + getUsage5Start 
+
+
+
+extractUsage(usageWithPercent) = substring(usageWithPercent, 0, find(usageWithPercent, " ", 0))
+extractPercent(usageWithPercent) = 
+	case isnan(extractPercentFloat(usageWithPercent)): 0
+	else: extractPercentFloat(usageWithPercent)
+	
+extractPercentFloat(usageWithPercent) = float(substring(usageWithPercent, find(usageWithPercent, " ", 0) + 1, len(usageWithPercent)))
+
+# XX Note: write function to replace spaces with underscores, for below.
+
+# This is where program is defined per building typology.
+# Make sure to add custom mixes into the @Range inside Building rule's Typology, and five times in above Usage attributes. 
+getUsageProfilePerTypology(typology) = 
+	# Here are some examples of typologies with mixed usage:
+	case typology == "Residential_Tower_Over_Retail": "Retail 10;Residential 90;"
+	case typology == "Mixed_Use_Tower": "Retail 20;Parking 20;Office 10;Hotel 20;Residential 30;"
+	case typology == "Vertical_Farm": "Retail 10;Agriculture 90;"
+	case typology == "MRT_Station": "Retail 15;Transportation 85;"
+	# This is for typologies based on 100% usages:
+	else: typology + " 100;"
+
+
+
+
+##################################################
+
+getUse1Color = getColorPerUsage(Usage_1)
+getUse2Color = getColorPerUsage(Usage_2)
+getUse3Color = getColorPerUsage(Usage_3)
+getUse4Color = getColorPerUsage(Usage_4)
+getUse5Color = getColorPerUsage(Usage_5)
+
+
+
+getColorPerUsage(usage) = 
+	case usage == "Agriculture": "#68B068"
+    case usage == "Assembly": "#627878"
+    case usage == "Education": "#6E6EFF"
+    case usage == "Industrial": "#8B61B3"
+    case usage == "Retail": "#E06565"
+    case usage == "Office": "#F0A8A8"
+    case usage == "Public": "#8AB89B"
+    case usage == "Residential": "#FDFD83"
+    case usage == "Service": "#F76F6F"
+    case usage == "Storage": "#C26CF7"
+    case usage == "Transportation": "#DADADA"
+    case usage == "Utility": "#D19FF1"
+    case usage == "Unknown": "#FFFFFF"
+	# Added To CIM usages:
+    case usage == "Hotel": "#EDED00"
+    case usage == "Parking": "#00FFFF"
+	# Color unknown as white.
+	else: "#FFFFFF"
+
+
+
+##########################################################################
+
+@Hidden
+attr _grossFloorArea = 0
+ 
+/*
+_gfaResidential = Use_Residential * _grossFloorArea / 100
+_gfaHotel = Use_Hotel * _grossFloorArea / 100
+_gfaOffice = Use_Office * _grossFloorArea / 100
+_gfaCommercial = Use_Commercial * _grossFloorArea / 100
+_gfaSkyGarden = Use_Sky_Garden * _grossFloorArea / 100
+_gfaUtility = Use_Utility * _grossFloorArea / 100
+_gfaMisc = Use_Misc * _grossFloorArea / 100
+_gfaParking = Use_Parking * _grossFloorArea / 100
+*/
+
+_use1gfa = _grossFloorArea * Usage_1_Percent / 100
+_use2gfa = _grossFloorArea * Usage_2_Percent / 100
+_use3gfa = _grossFloorArea * Usage_3_Percent / 100
+_use4gfa = _grossFloorArea * Usage_4_Percent / 100
+_use5gfa = _grossFloorArea * Usage_5_Percent / 100
+
+
+ReportUsages(grossFloorArea, sign) --> # XX sign currently unused until supply and demand model.
+	set(_grossFloorArea, grossFloorArea)
+
+	# xx  These will requires area put onto parcel obj attribute (py script)
+	#Parcel_Area
+	#Parcel_Coverage
+
+	# FOR SUMMATION ACROSS BUILDINGS, PARCELS, or REGIONS.
+	# GFA per usage.
+
+    report("GFA_Total", _grossFloorArea)
+    [case _use1gfa > 0: report("GFA_" + Usage_1, _use1gfa) NIL else: NIL]
+    [case _use2gfa > 0: report("GFA_" + Usage_2, _use2gfa) else: NIL]
+    [case _use3gfa > 0: report("GFA_" + Usage_3, _use3gfa) else: NIL]
+    [case _use4gfa > 0: report("GFA_" + Usage_4, _use4gfa) else: NIL]
+    [case _use5gfa > 0: report("GFA_" + Usage_5, _use5gfa) else: NIL]
+
+	# TARGETS
+	# Consumption 
+	report("Util_Electrical", _Build_Perf_Target_Electric) 
+	report("Util_Gas", _Build_Perf_Target_Water_Potable) 
+	report("Util_Potable", _Build_Perf_Target_Water_NonPotable) 
+	report("Util_Nonpotable", _Build_Perf_Target_Gas) 
+	# Production
+	report("Waste_Solid", _Build_Perf_Target_Waste_Solid) 
+	report("Waste_Black_Water", _Build_Perf_Target_Waste_Black_Water) 
+	report("Waste_Gray_Water", _Build_Perf_Target_Waste_Gray_Water) 
+	report("Waste_Recyclable", _Build_Perf_Target_Waste_Recyclable) 
+
+	# Unit counts and populations.
+	#report("Dwelling_Unit_Count", dwellingUnitCount(_gfaResidential) * sign) # XX reevaluate this naming convention
+	#report("Hotel_Room_Count", hotelRoomCount(_gfaHotel) * sign)
+	# Expand unit reporting later.
+
+	# One time building 
+	report("Construction_Building_Cost", constructionBuildingCost(_grossFloorArea)) 
+	report("Construction_Waste", constructionWaste(_grossFloorArea))
+
+
+	# TARGETS
+	# Consumption 
+	report("Perf_Target_Electric", _Build_Perf_Target_Electric) 
+	report("Perf_Target_Water_Potable", _Build_Perf_Target_Water_Potable) 
+	report("Perf_Target_Water_NonPotable", _Build_Perf_Target_Water_NonPotable) 
+	report("Perf_Target_Gas", _Build_Perf_Target_Gas) 
+	# Production
+	report("Perf_Target_Waste_Solid", _Build_Perf_Target_Waste_Solid) 
+	report("Perf_Target_Waste_Black_Water", _Build_Perf_Target_Waste_Black_Water) 
+	report("Perf_Target_Waste_Gray_Water", _Build_Perf_Target_Waste_Gray_Water) 
+	report("Perf_Target_Waste_Recyclable", _Build_Perf_Target_Waste_Recyclable) 
+	
+	# BASELINES
+	# Consumption 
+	report("Perf_Base_Electric", _Build_Perf_Base_Electric) 
+	report("Perf_Base_Water_Potable", _Build_Perf_Base_Water_Potable) 
+	report("Perf_Base_Water_NonPotable", _Build_Perf_Base_Water_NonPotable) 
+	report("Perf_Base_Gas", _Build_Perf_Base_Gas) 
+	# Production
+	report("Perf_Base_Waste_Solid", _Build_Perf_Base_Waste_Solid) 
+	report("Perf_Base_Waste_Black_Water", _Build_Perf_Base_Waste_Black_Water) 
+	report("Perf_Base_Waste_Gray_Water", _Build_Perf_Base_Waste_Gray_Water) 
+	report("Perf_Base_Waste_Recyclable", _Build_Perf_Base_Waste_Recyclable) 
+
+
+
+/* 
+	report("Car_Demand", 
+ 		(carsRequired("Residential", _gfaResidential) +
+		carsRequired("Hotel", _gfaHotel) +
+		carsRequired("Office", _gfaOffice) +
+		carsRequired("Commercial", _gfaCommercial) +
+		carsRequired("Sky_Garden", _gfaSkyGarden) +
+		carsRequired("Utility", _gfaUtility) +
+		carsRequired("Misc", _gfaMisc)) * sign)
+
+	report("Car_Spaces", carsRequired("Parking", _gfaParking) * sign) 
+	
+	report("Car_Net",  
+		(carsRequired("Residential", _gfaResidential) +
+		carsRequired("Hotel", _gfaHotel) +
+		carsRequired("Office", _gfaOffice) +
+		carsRequired("Commercial", _gfaCommercial) +
+		carsRequired("Sky_Garden", _gfaSkyGarden) +
+		carsRequired("SkyUtility", _gfaUtility) +
+		carsRequired("Misc", _gfaMisc) +
+		carsRequired("Parking", _gfaParking)) * sign)
+
+	# Unit counts and populations.
+	report("Dwelling Units", dwellingUnitCount(_gfaResidential) * sign) # XX reevaluate this naming convention
+	report("Hotel Rooms", hotelRoomCount(_gfaHotel) * sign)
+	# Expand unit reporting later.
+
+	*/
+	
+	NIL
+
+
+const Construction_Waste_Avg = 15 # kg/m2
+constructionBuildingCost(buildingTotalGFA) = buildingTotalGFA * Cost_Per_M2
+constructionWaste(buildingTotalGFA) = buildingTotalGFA * Construction_Waste_Avg * (100 - Reduction_Construction_Waste) / 100 
+
+# XX Attach these to usage-specific functions ASAP. 
+_Build_Perf_Base_Electric =  _grossFloorArea * 10
+/*	_gfaResidential * getUsageData_Electric("Residential") +
+	_gfaHotel * getUsageData_Electric("Hotel") +
+	_gfaOffice * getUsageData_Electric("Office") +
+	_gfaCommercial * getUsageData_Electric("Commercial") +
+	_gfaSkyGarden * getUsageData_Electric("Sky_Garden") +
+	_gfaUtility * getUsageData_Electric("Utility") +
+	_gfaMisc * getUsageData_Electric("Misc") +
+	_gfaParking * getUsageData_Electric("Parking")
+*/
+_Build_Perf_Target_Electric = 
+	_Build_Perf_Base_Electric * (100 - Reduction_Electric) / 100
+
+_Build_Perf_Base_Water_Potable = _grossFloorArea * 5
+/*	_gfaResidential * getUsageData_Water_Potable("Residential") +
+	_gfaHotel * getUsageData_Water_Potable("Hotel") +
+	_gfaOffice * getUsageData_Water_Potable("Office") +
+	_gfaCommercial * getUsageData_Water_Potable("Commercial") +
+	_gfaSkyGarden * getUsageData_Water_Potable("Sky_Garden") +
+	_gfaUtility * getUsageData_Water_Potable("Utility") +
+	_gfaMisc * getUsageData_Water_Potable("Misc") +
+	_gfaParking * getUsageData_Water_Potable("Parking")
+*/
+
+_Build_Perf_Target_Water_Potable = 
+	_Build_Perf_Base_Water_Potable * (100 - Reduction_WaterPotable) / 100
+
+_Build_Perf_Base_Water_NonPotable =   _grossFloorArea * 3
+/* 
+	_gfaResidential * getUsageData_Water_NonPotable("Residential") +
+	_gfaHotel * getUsageData_Water_NonPotable("Hotel") +
+	_gfaOffice * getUsageData_Water_NonPotable("Office") +
+	_gfaCommercial * getUsageData_Water_NonPotable("Commercial") +
+	_gfaSkyGarden * getUsageData_Water_NonPotable("Sky_Garden") +
+	_gfaUtility * getUsageData_Water_NonPotable("Utility") +
+	_gfaMisc * getUsageData_Water_NonPotable("Misc") +
+	_gfaParking * getUsageData_Water_NonPotable("Parking")
+*/
+_Build_Perf_Target_Water_NonPotable = 
+	_Build_Perf_Base_Water_NonPotable * (100 - Reduction_WaterNonPotable) / 100
+
+_Build_Perf_Base_Gas =  _grossFloorArea * 2
+/* 
+	_gfaResidential * getUsageData_Gas("Residential") +
+	_gfaHotel * getUsageData_Gas("Hotel") +
+	_gfaOffice * getUsageData_Gas("Office") +
+	_gfaCommercial * getUsageData_Gas("Commercial") +
+	_gfaSkyGarden * getUsageData_Gas("Sky_Garden") +
+	_gfaUtility * getUsageData_Gas("Utility") +
+	_gfaMisc * getUsageData_Gas("Misc") +
+	_gfaParking * getUsageData_Gas("Parking")
+*/
+_Build_Perf_Target_Gas = 
+	_Build_Perf_Base_Gas * (100 - Reduction_Gas) / 100
+
+_Build_Perf_Base_Waste_Solid =   _grossFloorArea * 7
+/* 
+	_gfaResidential * getUsageData_Waste_Solid("Residential") +
+	_gfaHotel * getUsageData_Waste_Solid("Hotel") +
+	_gfaOffice * getUsageData_Waste_Solid("Office") +
+	_gfaCommercial * getUsageData_Waste_Solid("Commercial") +
+	_gfaSkyGarden * getUsageData_Waste_Solid("Sky_Garden") +
+	_gfaUtility * getUsageData_Waste_Solid("Utility") +
+	_gfaMisc * getUsageData_Waste_Solid("Misc") +
+	_gfaParking * getUsageData_Waste_Solid("Parking")
+*/
+_Build_Perf_Target_Waste_Solid = 
+	_Build_Perf_Base_Waste_Solid * (100 - Reduction_Waste_Solid) / 100
+
+_Build_Perf_Base_Waste_Black_Water =   _grossFloorArea * 3.1415 # :)
+/* 
+	_gfaResidential * getUsageData_Waste_Black_Water("Residential") +
+	_gfaHotel * getUsageData_Waste_Black_Water("Hotel") +
+	_gfaOffice * getUsageData_Waste_Black_Water("Office") +
+	_gfaCommercial * getUsageData_Waste_Black_Water("Commercial") +
+	_gfaSkyGarden * getUsageData_Waste_Black_Water("Sky_Garden") +
+	_gfaUtility * getUsageData_Waste_Black_Water("Utility") +
+	_gfaMisc * getUsageData_Waste_Black_Water("Misc") +
+	_gfaParking * getUsageData_Waste_Black_Water("Parking")
+*/
+_Build_Perf_Target_Waste_Black_Water = 
+	_Build_Perf_Base_Waste_Black_Water * (100 - Reduction_Waste_Black_Water) / 100
+
+_Build_Perf_Base_Waste_Gray_Water =   _grossFloorArea * 2.351354
+/*  
+	_gfaResidential * getUsageData_Waste_Gray_Water("Residential") +
+	_gfaHotel * getUsageData_Waste_Gray_Water("Hotel") +
+	_gfaOffice * getUsageData_Waste_Gray_Water("Office") +
+	_gfaCommercial * getUsageData_Waste_Gray_Water("Commercial") +
+	_gfaSkyGarden * getUsageData_Waste_Gray_Water("Sky_Garden") +
+	_gfaUtility * getUsageData_Waste_Gray_Water("Utility") +
+	_gfaMisc * getUsageData_Waste_Gray_Water("Misc") +
+	_gfaParking * getUsageData_Waste_Gray_Water("Parking")
+*/
+_Build_Perf_Target_Waste_Gray_Water = 
+	_Build_Perf_Base_Waste_Gray_Water * (100 - Reduction_Waste_Gray_Water) / 100
+
+_Build_Perf_Base_Waste_Recyclable = _grossFloorArea * 1.123456789
+/*  
+	_gfaResidential * getUsageData_Waste_Recyclable("Residential") +
+	_gfaHotel * getUsageData_Waste_Recyclable("Hotel") +
+	_gfaOffice * getUsageData_Waste_Recyclable("Office") +
+	_gfaCommercial * getUsageData_Waste_Recyclable("Commercial") +
+	_gfaSkyGarden * getUsageData_Waste_Recyclable("Sky_Garden") +
+	_gfaUtility * getUsageData_Waste_Recyclable("Utility") +
+	_gfaMisc * getUsageData_Waste_Recyclable("Misc") +
+	_gfaParking * getUsageData_Waste_Recyclable("Parking")
+*/
+_Build_Perf_Target_Waste_Recyclable = 
+	_Build_Perf_Base_Waste_Recyclable * (100 - Reduction_Waste_Recyclable) / 100
+
+
+
+
+
+ 

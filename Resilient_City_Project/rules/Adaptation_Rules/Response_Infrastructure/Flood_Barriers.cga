@@ -1,0 +1,111 @@
+/**
+ * File:    Flood_Barriers.cga
+ * Created: 1 Oct 2017 17:38:22 GMT
+ * Author:  David J. Wasserman
+ *
+	Copyright 2016 David Joseph Wasserman & Geodesign Technologies
+	
+	This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+version "2017.1"
+
+
+#Attributes
+@Group("FLOOD BARRIER CONTROLS",1)
+@Order(1) @Range(0,100) @Description("Describes the resulting height from the none sloped extrusion of the flood barrier.")
+attr Barrier_Height=3.5
+@Order(2) @Range(0,100) @Description("Describes the reinforcement bracket spacing.")
+attr Barrier_Bracket_Spacing=4
+@Order(3) @Range(0,100) @Description("Describes the reinforcement bracket width.")
+attr Barrier_Bracket_Width=.3
+@Order(4) @Range(0,10) @Description("Describes the reinforcement bracket depth.")
+attr Barrier_Bracket_Depth=Barrier_Bracket_Width/1.5
+@Order(5)@Range(0,10)@Description("Describes top of the barriers rim height.")
+attr Barrier_Rim_Depth=min(Barrier_Bracket_Width/1.5,.3)
+
+@Group("DISPLAY SETTINGS","Representation",2)
+@Order(1)@Range("true","false")
+attr Display_Textures="true"
+@Order(2)@Range(0,1)
+attr Transparency=0
+@Group("DISPLAY SETTINGS","Textures",3)
+@Order(1)@File
+attr Wall_Concrete_Texture= Concrete_Assets+"/wall_concrete_5.jpg"
+@Order(2)@File
+attr Wall_Metal_Texture= Metal_Assets+"/Flat Metal 17.jpg"
+#Constants
+const Flood_Wall_Assets = "FloodWallsAndBarriers"
+const Wall_Textures = Flood_Wall_Assets + "/WallTextures"
+const Concrete_Assets = Wall_Textures + "/Concrete"
+const Metal_Assets =Flood_Wall_Assets +"/MetalAndTops"
+const Light_Gray="#d3d3d3"
+const Dark_Gray= "#939393"
+const texturingOn=bool(Display_Textures)
+
+
+Lot-->
+	Shape
+Shape-->
+	Flood_Wall_Base("Flood Wall")
+Flood_Wall_Base(Location)-->
+	label(Location)
+	report("Barrier Footprint Area",geometry.area)
+	extrude(world.up.flatTop,Barrier_Height)
+	report("Barrier Volume",geometry.volume)
+	set(material.opacity,1-Transparency)
+	color(Light_Gray)
+	comp(f) {side:Flood_Wall_Side("Flood Wall Sides")
+		|top: Flood_Wall_Top("Flood Wall Top")
+		|bottom:Flood_Wall_Bottom("Flood Wall Floor")}
+
+Flood_Wall_Side(Location)-->
+	label(Location)
+	split(x,noAdjust) {~Barrier_Bracket_Spacing/2:Flood_Wall
+	|Barrier_Bracket_Width:Bracket
+	|~Barrier_Bracket_Spacing/2:Flood_Wall}*
+
+Flood_Wall--> 
+	case texturingOn:
+		setupProjection(0,scope.xy,2,2)
+		texture(Wall_Concrete_Texture)
+		projectUV(0)
+	else:
+		color(Light_Gray)
+	
+
+Metal_Facet-->
+	case texturingOn:
+		setupProjection(0,scope.xy,2,2)
+		texture(Wall_Metal_Texture)
+		projectUV(0)
+	else:
+		color(Dark_Gray)
+
+Bracket-->
+	taper(Barrier_Bracket_Depth)
+	alignScopeToAxes(y)
+	Metal_Facet
+	
+Flood_Wall_Top(Location)-->
+	label(Location)
+	setback(Barrier_Rim_Depth) {all:Barrier_Rim("Barrier_Rim")|remainder:Flood_Wall}
+Barrier_Rim(Location)-->
+	extrude(Barrier_Rim_Depth)
+	Metal_Facet
+
+Flood_Wall_Bottom(Location)-->
+	label(Location)
+	X.
+	
+	

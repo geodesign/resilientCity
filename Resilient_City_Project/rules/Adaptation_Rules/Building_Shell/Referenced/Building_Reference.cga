@@ -1,0 +1,394 @@
+/**
+ * File:    BuildingReference.cga
+ * Created: 14 Oct 2014 14:52:40 GMT
+ * Author:  David Wasserman & chri7180
+ * Details: ESRI Redlands Derivative Work
+ */
+
+version "2014.1"
+
+
+#@Hidden
+import Usage_Typology:"Usage_Typology.cga"
+@Hidden
+import Math:"Math.cga"
+
+
+
+## Testing:
+@Hidden
+attr representation = "Usage"
+@Hidden
+attr color_range	=	"whiteToBlue"
+@Hidden
+attr invert_color=false
+@Hidden
+attr levelHeight = 3.5
+@Hidden
+attr totalHeight = levelHeight
+@Hidden
+attr levelsAboveGround = 4
+@Hidden
+attr defaultLevelHeight = 3.5
+@Hidden
+attr values0To1 = 0
+@Hidden
+attr values1To9 = 1
+@Hidden
+attr Grade_Elevation=scope.elevation
+@Hidden
+attr Base_Flood_Elevation=0
+@Hidden
+attr Free_Board_Requirement=.3048
+
+
+
+
+
+ColoredBuilding -->			
+	case representation== "Wall Surface Flooded":
+		ColorFloors
+	case representation == "Usage":
+		# Usage coloring is handled later due to horizontal floor split logic.
+		ColorFloors
+	case representation == "Values 1 to 9" && color_range!="whiteToBlue":
+		case invert_color:
+			color(colorRamp(color_range, 1-Math.integerOneToNineNormalized(values1To9)))
+			ColorFloors
+		else:			
+			color(colorRamp(color_range, Math.integerOneToNineNormalized(values1To9)))
+			ColorFloors
+	case representation == "Values 1 to 9" && color_range=="whiteToBlue":
+		case invert_color:
+			color(Math.integerOneToNineNormalized(values1To9),Math.integerOneToNineNormalized(values1To9),1)
+			# Or use this one to reverse the ramp:
+			#color(colorRamp("greenToRed", (_Values_0_to_1)))
+			ColorFloors
+		else:
+			color(1-Math.integerOneToNineNormalized(values1To9),1-Math.integerOneToNineNormalized(values1To9),1)
+			# Or use this one to reverse the ramp:
+			#color(colorRamp("greenToRed", (_Values_0_to_1)))
+			ColorFloors
+	case representation == "Values 0 to 1" && color_range!="whiteToBlue":
+		 case invert_color: 
+		 	color(colorRamp(color_range, (1 - values0To1)))
+			# Or use this one to reverse the ramp:
+			#color(colorRamp("greenToRed", (_Values_0_to_1)))
+			ColorFloors
+		else: 
+			color(colorRamp(color_range, (values0To1)))
+			# Or use this one to reverse the ramp:
+			#color(colorRamp("greenToRed", (_Values_0_to_1)))
+			ColorFloors
+	case representation == "Values 0 to 1" && color_range=="whiteToBlue":
+		case invert_color: 
+			color(values0To1,values0To1,1)
+			# Or use this one to reverse the ramp:
+			#color(colorRamp("greenToRed", (_Values_0_to_1)))
+			ColorFloors
+		else:
+			color(1-values0To1,1-values0To1,1)
+			# Or use this one to reverse the ramp:
+			#color(colorRamp("greenToRed", (_Values_0_to_1)))
+			ColorFloors
+	# Another option is to just sample colors:
+	#case _Display_Type == "Raster color sample":
+	# Other rule-based Display Types could be here, like one below.
+	#case _Display_Type == "Heatmap Rule, Flood Risk":
+		# XX TEMP ESTIMATED RANGE!
+	#	color(colorByEvalFloodRisk(startElevation, 5, 12))
+	#	ColorFloors
+	else:
+		# Error.
+		print("Error. Display_Type not found: " + representation )
+		color(0,0,0)
+		X. 
+
+	
+
+###################################################
+###################################################
+# Floor Coloring
+
+#@Range(-180,180)
+# This could be used to allow user to rotate usage display splitting.
+@Hidden
+attr Display_Rotation = 0
+
+#Functions
+#totalHeight levelsAboveGround levelsBelowGround levelHeight eaveHeight
+levelHeightFinal = levelHeight 
+
+extrusionOnlyTotalHeight = totalHeight  # Uses handle and is first step.
+
+/* 
+extrusionOnlyFloorCount =
+	case levelsAboveGround > 0: levelsAboveGround
+	else:
+extrusionOnlyFloorHeight = 
+	case levelsAboveGround <= 0: levelHeight
+	else:
+*/ 
+const Floor_Gap=.3
+const multipatchHeight=scope.sy
+maxHeight= case totalHeight>multipatchHeight: totalHeight else: multipatchHeight
+_multipatchFloorCount = rint(maxHeight/ levelHeight ) #????????????
+_multipatchFloorHeight = maxHeight / _multipatchFloorCount #??????????
+#Flood Functions		
+_DesignFloodHeight= Base_Flood_Elevation+Free_Board_Requirement		
+_FootPrintInundation=_DesignFloodHeight-Grade_Elevation
+_FloodedFloorCount=ceil(_FootPrintInundation/_multipatchFloorHeight)
+_DamageIndex=_FloodedFloorCount/_multipatchFloorCount
+_NonFloodWallColor=
+	case invert_color:
+		colorRamp("yellowToRed",1-(_DamageIndex))
+	else:
+		colorRamp("yellowToRed",(_DamageIndex))
+	
+
+
+ColorFloors -->
+	report("Flood: Damage Index (% of Flooded Floors)",_DamageIndex*100)
+	report("Flood: Total Flooded Floors",_FloodedFloorCount)
+	report("Flood: Flood Inundation (M)",_FootPrintInundation)
+	rotateScope(0, Display_Rotation, 0)
+	#split(y) { levelHeightFinal : Floor(split.index, split.total)}* 
+	FloorSplits
+	
+FloorSplits -->
+	split(y) {levelHeightForSplits: FloorSplit(split.index,split.total)}*
+			
+levelHeightForSplits = 
+	case levelHeight > 0 && levelsAboveGround <= 0: levelHeight  # XX or do we round?
+	case levelHeight <= 0 && levelsAboveGround > 0: totalHeight / levelsAboveGround 
+	case levelHeight <= 0 && levelsAboveGround <= 0: defaultLevelHeight
+	case levelHeight > 0 && levelsAboveGround > 0: levelHeight 
+	else: defaultLevelHeight
+
+
+FloorSplit(floorIndex, floorTotal) -->
+	alignScopeToAxes(y)
+	Floor(floorIndex, floorTotal)
+
+Floor(floorIndex, floorTotal) -->
+	split(y) {
+		levelHeight - Floor_Gap: FloorDispatch(floorIndex, floorTotal) 
+		| Floor_Gap: NIL
+	}
+	
+FloorDispatch(floorIndex, floorTotal) -->
+	case representation== "Wall Surface Flooded":
+		Flood_Visualization(floorIndex,floorTotal)
+	case representation != "Usage":
+		Outline
+	case buildingIsSingleUse:
+		color(Usage_Typology.getColorPerUsage(Usage_Typology.Usage_1))
+		Outline
+	else:
+		# Now color floors according to usage.
+		FloorUsageSplittingSetup(floorIndex, floorTotal)
+Flood_Visualization(floorIndex,floorTotal)-->
+	case Grade_Elevation>(Base_Flood_Elevation-.01):
+		color("#aaaaaa")	
+	else: 
+		Flood_Damage_Cartography(floorIndex,floorTotal)
+
+Flood_Damage_Cartography(floorIndex,floorTotal)-->
+	alignScopeToAxes(y)
+	
+	report("Flood: Total Exterior Area (M^2)",geometry.area())
+	split(y) {(_FootPrintInundation-(floorIndex*levelHeight)):Flooded_Wall(floorIndex,floorTotal,geometry.area())
+				  |~1:Not_Flood_Wall(floorIndex,floorTotal,geometry.area())}
+	
+Flooded_Wall(floorIndex,floorTotal,totalArea)-->
+	color("#0a39FF")
+	report("Flood: Inundated Exterior Area (M^2)",geometry.area())
+	
+Not_Flood_Wall(floorIndex,floorTotal,totaArea)-->
+	case color_range=="whiteToBlue":
+		case invert_color:
+			color(_NonFloodWallColor)
+		else:
+			color(_NonFloodWallColor )
+		
+	case color_range!="whiteToBlue":
+		case invert_color:
+			color(_NonFloodWallColor )
+		else:
+			color(_NonFloodWallColor )	
+	else:
+		color(_NonFloodWallColor)
+		print("Not an appropriate color range")
+		
+		
+# Support functions for FloorUsageSplitting.
+buildingIsSingleUse = Usage_Typology.Usage_1_Percent == 100
+floorStart = (_floorIndex / _floorTotal)	
+floorEnd = ((_floorIndex + 1) / _floorTotal)
+use1Start = Usage_Typology.getUsage1Start * 0.01
+use2Start = Usage_Typology.getUsage2Start * 0.01
+use3Start = Usage_Typology.getUsage3Start * 0.01
+use4Start = Usage_Typology.getUsage4Start * 0.01
+use5Start = Usage_Typology.getUsage5Start * 0.01
+use1End = Usage_Typology.getUsage1End * 0.01
+use2End = Usage_Typology.getUsage2End * 0.01
+use3End = Usage_Typology.getUsage3End * 0.01
+use4End = Usage_Typology.getUsage4End * 0.01
+use5End = Usage_Typology.getUsage5End * 0.01
+
+useStartsHere(usageStart) = usageStart >= floorStart &&	usageStart < floorEnd
+use1StartsHere = useStartsHere(use1Start) 
+use2StartsHere = useStartsHere(use2Start) 
+use3StartsHere = useStartsHere(use3Start) 
+use4StartsHere = useStartsHere(use4Start) 
+use5StartsHere = useStartsHere(use5Start) 
+
+useHasEnded(usageEnd) = usageEnd <= floorStart
+useHasNotEnded(usageEnd) = !useHasEnded(usageEnd)
+use1HasNotEnded = useHasNotEnded(use1End)
+use2HasNotEnded = useHasNotEnded(use2End)
+use3HasNotEnded = useHasNotEnded(use3End)
+use4HasNotEnded = useHasNotEnded(use4End)
+use5HasNotEnded = useHasNotEnded(use5End)
+
+floorInterval = 1 / _floorTotal
+
+@Hidden
+attr _floorIndex = 0
+@Hidden
+attr _floorTotal = 0
+ 
+FloorUsageSplittingSetup(floorIndex, floorTotal) -->
+	set(_floorIndex, floorIndex)
+	set(_floorTotal, floorTotal)
+	FloorUsageSplittingRotate
+
+FloorUsageSplittingRotate -->
+	case Math.isOdd(_floorIndex):
+		# This scope rotation makes smaller percentage usages be contiguous across floors.
+		# It alternates the usage coloring direction on every odd level.
+		rotateScope(0,180,0)
+		FloorUsageSplitting
+	else:
+		FloorUsageSplitting
+
+
+FloorUsageSplitting -->
+	case use1HasNotEnded:	
+		case use2StartsHere:				
+			case use3StartsHere:			
+				case use4StartsHere:		
+					case use5StartsHere:	
+						# Uses 1-5.
+						#print("1-5")
+						split(x) {
+							'((use1End - floorStart) / floorInterval): color(Usage_Typology.getUse1Color) Outline |
+							'((use2End - use1End) / floorInterval): color(Usage_Typology.getUse2Color) Outline |
+							'((use3End - use2End) / floorInterval): color(Usage_Typology.getUse3Color) Outline |
+							'((use4End - use3End) / floorInterval): color(Usage_Typology.getUse4Color) Outline |
+							'((floorEnd - use4End) / floorInterval): color(Usage_Typology.getUse5Color) Outline
+						}
+					else: 	
+						# Uses 1-4.
+						#print("1-4")
+						split(x) {
+							'((use1End - floorStart) / floorInterval): color(Usage_Typology.getUse1Color) Outline |
+							'((use2End - use1End) / floorInterval): color(Usage_Typology.getUse2Color) Outline |
+							'((use3End - use2End) / floorInterval): color(Usage_Typology.getUse3Color) Outline |
+							'((floorEnd - use3End) / floorInterval): color(Usage_Typology.getUse4Color) Outline
+						}
+				else:		
+					# Uses 1-3.
+					#print("1-3")
+					split(x) {
+						'((use1End - floorStart) / floorInterval): color(Usage_Typology.getUse1Color) Outline |
+						'((use2End - use1End) / floorInterval): color(Usage_Typology.getUse2Color) Outline |
+						'((floorEnd - use2End) / floorInterval): color(Usage_Typology.getUse3Color) Outline
+					}
+			else:			
+				# Uses 1-2.
+				#print("1-2")
+				split(x) {
+					'((use1End - floorStart) / floorInterval): color(Usage_Typology.getUse1Color) Outline |
+					'((floorEnd - use1End) / floorInterval): color(Usage_Typology.getUse2Color) Outline
+				}
+		else:
+			# Use 1 only.
+			color(Usage_Typology.getUse1Color) Outline
+			#print("1 only")
+	
+	case use2HasNotEnded:
+		case use3StartsHere:				
+			case use4StartsHere:			
+				case use5StartsHere:
+					# Uses 2-5.
+					#print("2-5")
+					split(x) {
+						'((use2End - floorStart) / floorInterval): color(Usage_Typology.getUse2Color) Outline |
+						'((use3End - use2End) / floorInterval): color(Usage_Typology.getUse3Color) Outline |
+						'((use4End - use3End) / floorInterval): color(Usage_Typology.getUse4Color) Outline |
+						'((floorEnd - use4End) / floorInterval): color(Usage_Typology.getUse5Color) Outline
+					}
+				else:		
+					# Uses 2-4.
+					#print("2-4")
+					split(x) {
+						'((use2End - floorStart) / floorInterval): color(Usage_Typology.getUse2Color) Outline |
+						'((use3End - use2End) / floorInterval): color(Usage_Typology.getUse3Color) Outline |
+						'((floorEnd - use3End) / floorInterval): color(Usage_Typology.getUse4Color) Outline
+					}
+			else:			
+				# Uses 2-3.
+				#print("2-3")
+				split(x) {
+					'((use2End - floorStart) / floorInterval): color(Usage_Typology.getUse2Color) Outline |
+					'((floorEnd - use2End) / floorInterval): color(Usage_Typology.getUse3Color) Outline
+				}
+
+		else:				
+			# Use 2 only.
+			color(Usage_Typology.getUse2Color) Outline
+			#print("2 only")			
+	case use3HasNotEnded:					
+		case use4StartsHere:				
+			case use5StartsHere:			
+				# Uses 3-5.		
+				#print("3-5")
+				split(x) {
+					'((use3End - floorStart) / floorInterval): color(Usage_Typology.getUse3Color) Outline |
+					'((use4End - use3End) / floorInterval): color(Usage_Typology.getUse4Color) Outline |
+					'((floorEnd - use4End) / floorInterval): color(Usage_Typology.getUse5Color) Outline
+				}
+			else:			
+				# Uses 3-4.
+				#print("3-4")	
+				split(x) {
+					'((use3End - floorStart) / floorInterval): color(Usage_Typology.getUse3Color) Outline |
+					'((floorEnd - use3End) / floorInterval): color(Usage_Typology.getUse4Color) Outline
+				}
+
+		else:				
+			# Use 3 only.
+			color(Usage_Typology.getUse3Color) Outline
+			#print("3 only")
+	case use4HasNotEnded:					
+		case use5StartsHere:				
+			# Uses 4-5.
+			#print("4-5")
+			split(x) {
+				'((use4End - floorStart) / floorInterval): color(Usage_Typology.getUse4Color) Outline |
+				'((floorEnd - use4End) / floorInterval): color(Usage_Typology.getUse5Color) Outline
+			}
+		else:				
+			# Use 4 only.
+			color(Usage_Typology.getUse4Color) Outline
+			#print("4 only")
+	case use5HasNotEnded:					
+		# Use 5 only.
+		color(Usage_Typology.getUse5Color) Outline		
+		#print("5 only")
+	else:
+		color(1,1,1)
+		print("Error: Percent of usages does not add to 100%.")
+		print("       Rest of building is colored white")
+

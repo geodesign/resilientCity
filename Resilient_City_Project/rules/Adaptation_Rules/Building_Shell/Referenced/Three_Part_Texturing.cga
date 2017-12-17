@@ -1,0 +1,423 @@
+ /**
+ * File:    Three_Part_Texturing.cga
+ * Created: 14 Jul 2014 14:55:43 GMT
+ * Author:  chri7180
+ * Details: ESRI Redlands Derivative Work
+ */
+
+version "2014.0"
+
+# Contains functions for finding textures for use with 
+# Three Part Texturing demonstrated in the Singapore URA project.
+
+
+##################################################
+# TEST Attributes for applying directly to footprint shape, rather than import.
+
+
+@Range(1,50)
+attr Test_Floor_Count = 10
+
+@Range(3,8)
+attr Test_Floor_Height = 4
+
+@File
+attr Test_Texture = getFacadeTexture(Test_Floor_Count, Test_Path)
+
+const Test_Path = "assets/BuildingTextures/Facades/Unknown/"
+
+
+##################################################
+# Hidden Internal Attributes used in generation.
+
+@Hidden 
+attr _thisTexture = ""
+@Hidden
+attr _thisFacadeDirectory = ""
+@Hidden 
+attr _thisFloorHeight = 0
+@Hidden 
+attr _thisFloorCount = 0
+@Hidden
+attr _thisFacadeTextureGround = ""
+@Hidden
+attr _thisFacadeTextureTop = ""
+@Hidden 
+attr _thisGroundFloorsHeight = 0
+@Hidden 
+attr _thisOtherFloorsHeight = 0
+@Hidden 
+attr _thisTopFloorsHeight = 0
+@Hidden 
+attr _thisAllTexturesWidth = 0
+@Hidden 
+attr _thisTexture_Horizontal_Offset = 0 
+@Hidden
+attr _thisOtherTextureProjectionY = 0
+
+####################################################
+# Rules.
+
+
+
+
+@StartRule 
+BuildingFootprintTEST -->
+	set(_thisTexture, Test_Texture)
+	set(_thisFacadeDirectory, fileDirectory(Test_Texture))
+	set(_thisFloorCount, Test_Floor_Count)
+	set(_thisFloorHeight, Test_Floor_Height)
+	# Use above Inspector attributes for testing. 
+	BuildingFootprint(Test_Texture, fileDirectory(Test_Texture), Test_Floor_Count, Test_Floor_Height, 0)	
+
+@Hidden
+attr _InputShape = ""
+
+# Use this from importing rule.
+BuildingFootprint(thisTexture, thisFacadeDirectory, thisFloorCount, thisFloorHeight, thisFacadeHorizontalOffset) -->
+	set(_InputShape, "Footprint")
+	# These four attributes are required from importing rule, or test rule.
+	set(_thisTexture, thisTexture)
+	set(_thisFacadeDirectory, thisFacadeDirectory)
+	set(_thisFloorCount, thisFloorCount)
+	set(_thisFloorHeight, thisFloorHeight)
+	set(_thisTexture_Horizontal_Offset, thisFacadeHorizontalOffset)
+	
+	# The remaining internal attributes can be set based on the above four inputs.
+	SetInternalAttributes
+	
+SetInternalAttributes -->
+	set(_thisFacadeTextureGround, _facadeTextureGround(_thisTexture, _thisFacadeDirectory))
+	set(_thisFacadeTextureTop, _facadeTextureTop(_thisTexture, _thisFacadeDirectory))
+	set(_thisGroundFloorsHeight, 
+		groundFloorsHeight(_thisFloorHeight, _thisFloorCount, _textureFloorsGround(_thisTexture, _thisFacadeDirectory)))
+	set(_thisTopFloorsHeight, 
+		topFloorsHeight(_thisFloorHeight, _thisFloorCount, _textureFloorsGround(_thisTexture, _thisFacadeDirectory), _textureFloorsTop(_thisTexture, _thisFacadeDirectory)))
+	set(_thisOtherFloorsHeight,
+		otherFloorsHeight(_thisFloorHeight, _thisFloorCount, _textureFloorsGround(_thisTexture, _thisFacadeDirectory), _textureFloorsTop(_thisTexture, _thisFacadeDirectory)))
+	set(_thisAllTexturesWidth, allTexturesWidth(_thisFloorHeight, _thisTexture))
+	set(_thisOtherTextureProjectionY, otherTextureProjectionY(_thisFloorHeight, _thisTexture))
+	#Debug
+	Footprint_Vs_Multipatch
+	
+Footprint_Vs_Multipatch -->
+	case _InputShape == "Footprint": 
+		BuildingShell
+	else:
+		MPBuildingShell
+
+Debug -->
+	print("======================")
+	print("_thisTexture, "+_thisTexture)
+	print("_thisFacadeDirectory, "+_thisFacadeDirectory)
+	print("_thisFloorCount, "+_thisFloorCount)
+	print("_thisFloorHeight, "+_thisFloorHeight)
+	print("_thisFacadeTextureGround, "+_thisFacadeTextureGround)
+	print("_thisFacadeTextureTop, "+_thisFacadeTextureTop)
+	print("_thisGroundFloorsHeight, "+_thisGroundFloorsHeight)
+	print("_thisTopFloorsHeight, "+_thisTopFloorsHeight)
+	print("_thisOtherFloorsHeight, "+_thisOtherFloorsHeight)
+	print("_thisAllTexturesWidth, "+_thisAllTexturesWidth)
+	print("_thisTexture_Horizontal_Offset, "+_thisTexture_Horizontal_Offset)
+	print("_thisOtherTextureProjectionY, "+_thisOtherTextureProjectionY)
+	print("--------------------------")
+	print("_textureFloorsGround(_thisTexture, _thisFacadeDirectory), "+_textureFloorsGround(_thisTexture, _thisFacadeDirectory))
+	print("groundFloorsHeight(3.5, 6 ,2) = "+ groundFloorsHeight(3.5, 6 ,2))
+	print("_groundFloorCountFinal(6, 2) = "+ _groundFloorCountFinal(6, 2))  
+	print("_groundFloorsCoverBuilding(6, 2) = " + _groundFloorsCoverBuilding(6, 2))
+
+MPBuildingShell -->
+	# Make building's object coordinate system align to world axes 
+	# or else it evaluates faces incorrectly.
+	alignScopeToAxes()
+	# Save height of overall building, before separating faces.
+	set(MPTotalHeight, scope.sy)
+	# Remember the bottom elevation for telling which faces are how high 
+	# on facade, so that all textures are aligned vertically. 
+	set(MPBuildingElevation, scope.elevation)
+	# Do facade image query and calculations here, once.
+	comp(f) {vertical = MPFacadeTexture | all : MPRoofTexture }
+
+#XX
+MPRoofTexture --> color(0.5,0.5,0.5)
+
+#XX NOTE: This MP code might be mergable with the extrusion code. Do later.
+MPFacadeTexture -->
+	alignScopeToAxes(y)
+	split(y) {
+		_thisGroundFloorsHeight: MPGround | 
+		_thisOtherFloorsHeight:	MPOther |
+		_thisTopFloorsHeight: MPTop
+	}
+	
+@Hidden
+attr MPTotalHeight = 0  
+@Hidden
+attr MPBuildingElevation = 0 
+
+MPGround --> comp(f) {side: MPTextureGround } 
+
+MPTextureGround -->
+	# Align scope for face or else windows might not be aligned horizontally.
+	alignScopeToAxes(y)
+	# Offset the texturing so that all vertical textures are aligned with ground.
+	setupProjection(0, scope.xy, _thisAllTexturesWidth, _thisGroundFloorsHeight, 
+		_thisTexture_Horizontal_Offset, MPBuildingElevation - scope.elevation) 
+	projectUV(0)
+	texture(_thisFacadeTextureGround)
+
+MPOther --> comp(f) {side: MPTextureOther }
+
+MPTextureOther -->
+	# Align scope for face or else windows might not be aligned horizontally.
+	alignScopeToAxes(y)
+	# Offset the texturing so that all vertical textures are aligned with ground.
+	setupProjection(0, scope.xy, _thisAllTexturesWidth, _thisOtherTextureProjectionY,	
+		_thisTexture_Horizontal_Offset, MPBuildingElevation - scope.elevation) 
+	projectUV(0)
+	texture(_thisTexture)
+
+MPTop --> comp(f) {side: MPTextureTop }
+
+MPTextureTop -->
+	# Align scope for face or else windows might not be aligned horizontally.
+	alignScopeToAxes(y)
+	# Offset the texturing so that all vertical textures are aligned with ground.
+	setupProjection(0, scope.xy, _thisAllTexturesWidth, _thisTopFloorsHeight, 
+		_thisTexture_Horizontal_Offset, MPBuildingElevation - scope.elevation) 
+	projectUV(0)
+	texture(_thisFacadeTextureTop)
+
+
+BuildingShell -->
+	alignScopeToAxes(y)
+	s('1,0,'1)
+	GroundFloors
+	OtherFloors 
+	TopFloors
+
+GroundFloors -->
+	case _thisGroundFloorsHeight > 0:
+		extrude(_thisGroundFloorsHeight)
+		comp(f) {side: TextureGround }
+	else:
+		NIL	
+	
+TextureGround -->
+	setupProjection(0, scope.xy, _thisAllTexturesWidth, _thisGroundFloorsHeight, 
+		_thisTexture_Horizontal_Offset, 0) 
+	projectUV(0)
+	texture(_thisFacadeTextureGround)
+	
+
+OtherFloors -->
+	case _thisOtherFloorsHeight > 0:
+		translate(rel, world, 0, _thisGroundFloorsHeight, 0)
+		extrude(_thisOtherFloorsHeight)
+		comp(f) {side: TextureOther}
+	else:
+		NIL	
+
+TextureOther -->
+	setupProjection(0, scope.xy, _thisAllTexturesWidth, _thisOtherTextureProjectionY,	
+		_thisTexture_Horizontal_Offset, 0) 
+	projectUV(0)
+	texture(_thisTexture)
+
+
+TopFloors -->
+	case _thisTopFloorsHeight > 0: 
+		translate(rel, world, 0, _thisGroundFloorsHeight + _thisOtherFloorsHeight, 0) 
+		extrude(_thisTopFloorsHeight)
+		comp(f) {side: TextureTop}
+	else:
+		NIL
+	
+TextureTop -->
+	setupProjection(0, scope.xy, _thisAllTexturesWidth, _thisTopFloorsHeight, 
+		_thisTexture_Horizontal_Offset, 0) 
+	projectUV(0)
+	texture(_thisFacadeTextureTop)
+
+
+#############################
+
+
+
+
+
+# Public functions:
+
+getFacadeTexture(floors, facadeDir) = _selectGoodUpperfloorsTexture(_getHigherUpperfloorsTextures(floors, facadeDir), facadeDir)
+
+
+
+
+############################################
+# TEXTURING
+
+# XX Test this for low floor count issues.
+
+# This part is for finding average floor height, based on total height and floor heights.
+
+#XX TEMP!
+
+/*
+
+We pick middle texture with at least Max_Floor_For_Texturing floors, just in case no floor and top are given.
+
+If ground floor count will cover building, or more, then use that for whole building.
+else if only both top and ground fit, then use no middle.
+else if at least one middle floor will fit between ground and top, then do that (usual way).
+
+If ground or top is missing, then they evaluate to zero, and we watch out for 
+
+
+case groundFloorsCoverBuilding:
+	use entire ground to cover building - may need to shorten texture. 
+
+*/
+
+#groundFloorsCoverBuilding = textureFloorsGround >= _Floor_Count
+#groundAndTopWontFit = (textureFloorsGround + textureFloorsTop) > _Floor_Count
+
+_groundFloorsCoverBuilding(floors, groundFloorsFromTexture) = groundFloorsFromTexture >= floors
+_groundAndTopWontFit(floors, groundFloorsFromTexture, topFloorsFromTexture) = (groundFloorsFromTexture + topFloorsFromTexture) > floors
+
+_groundFloorCountFinal(floors, groundFloorsFromTexture) = 
+	case _groundFloorsCoverBuilding(floors, groundFloorsFromTexture): floors
+	else: groundFloorsFromTexture
+
+otherFloorsHeight(floorHeight, floors, groundFloorsFromTexture, topFloorsFromTexture) = 
+	floorHeight * _otherFloorCountFinal(floors, groundFloorsFromTexture, topFloorsFromTexture) #, facadeTexture, facadeDir) 
+
+_otherFloorCountFinal(floors, groundFloorsFromTexture, topFloorsFromTexture) = #, facadeTexture, facadeDir) = 
+	case _groundFloorsCoverBuilding(floors, groundFloorsFromTexture): 0
+	case _groundAndTopWontFit(floors, groundFloorsFromTexture, topFloorsFromTexture): floors - groundFloorsFromTexture # Skip top.
+	#else: _Floor_Count - textureFloorsGround - 1# textureFloorsTop # Can be zero.
+	#else: floors - _textureFloorsGround(facadeTexture, facadeDir) - 1# textureFloorsTop # Can be zero.
+	else: floors - groundFloorsFromTexture - topFloorsFromTexture
+
+_topFloorCountFinal(floors, groundFloorsFromTexture, topFloorsFromTexture) = 
+	case _groundFloorsCoverBuilding(floors, groundFloorsFromTexture): 0
+	case _groundAndTopWontFit(floors, groundFloorsFromTexture, topFloorsFromTexture): 0
+	else: topFloorsFromTexture
+
+# For finding projections based on middle texture's ratio of X to Y per floor.
+allTexturesWidth(floorHeight, facadeTexture) = floorHeight * _pixelsXPerYPerFloor(facadeTexture)
+_pixelsXPerYPerFloor(facadeTexture) = _pixelsXFacadeTexture(facadeTexture) / _pixelsYPerFloor(facadeTexture)
+_pixelsXFacadeTexture(facadeTexture) = imageInfo(facadeTexture, sx)
+_pixelsYFacadeTexture(facadeTexture) = imageInfo(facadeTexture, sy)
+_pixelsYPerFloor(facadeTexture) = _pixelsYFacadeTexture(facadeTexture) / _textureFloorsOther(facadeTexture)
+
+
+ 
+# Find other floors projection and height.
+otherTextureProjectionY(floorHeight, facadeTexture) = floorHeight * _textureFloorsOther(facadeTexture)
+
+groundFloorsHeight(floorHeight, floors, groundFloorsFromTexture) = 
+	floorHeight * _groundFloorCountFinal(floors, groundFloorsFromTexture) 
+
+topFloorsHeight(floorHeight, floors, groundFloorsFromTexture, topFloorsFromTexture) = 
+	floorHeight * _topFloorCountFinal(floors, groundFloorsFromTexture, topFloorsFromTexture)
+   
+
+
+
+
+###################################################################################
+# Texture file search functions (modified from International City Wizard, CE 2013):
+
+_selectGoodUpperfloorsTexture(list, facadeDir) =
+	case listSize(list) > 9	: listRandom(_firstEntries(list))						# textures with same or higher floorcount found, so we take the first $NeighborLookup of the list
+	else : listRandom(_lastEntries(_getAllUpperfloorTextures(facadeDir)))   # not many textures with same or higher floorcount found, so we just take the last $NeighborLookup of the list (i.e. the highest ones)
+_getAllUpperfloorTextures(facadeDir) = fileSearch(facadeDir + "*_f*")
+_getHigherUpperfloorsTextures(floors, facadeDir) = fileSearch("$" + facadeDir + ".*_f" + _regexRangeTo999(floors) + ".*") 
+
+# file library utils
+
+_firstEntries(list) = listRange(list,0,NeighborLookup-1)
+_lastEntries(list) = listRange(list,listSize(list)-NeighborLookup,listSize(list))			
+const NeighborLookup = 20		# number of neighboring textures in the folder to look up to find a texture which fits well to the building height.
+
+# Regexp numeric file name search function for 001 to 999. 
+_regexRangeTo999(n) =
+	"(" + _hundreds(n)			+ _tens(n)			+ "["+_ones(n)+"-9]" +
+	"|" + _hundreds(n)			+ _above(_tens(n))	+ "[0-9]" +
+	"|" + _above(_hundreds(n))	+ "[0-9]" 			+ "[0-9])"
+	
+_hundreds(n) = floor(n/100)	
+_tens(n) = floor((n/10)%10)	 
+_ones(n) = floor(n%10)	
+_above(n) = case n<9: "["+(n+1)+"-9]" else: "X" 		# X because otherwise no range needed (and X will have no hits i.e. the corresponding row in the regex will be useless with X)
+
+
+#####
+
+_textureFloorsOther(facadeDir) = _round1(float(getRange(facadeDir,"_f",".jpg")))
+_round1(val) = case val > 0.5: rint(val) else: 1
+
+
+_buildingName(facadeTexture, facadeDir) = getRange(facadeTexture, facadeDir, "_f")
+_facadeTextureGround(facadeTexture, facadeDir) = fileRandom(facadeDir + _buildingName(facadeTexture, facadeDir) + "_g*")
+_facadeTextureTop(facadeTexture, facadeDir) = fileRandom(facadeDir + _buildingName(facadeTexture, facadeDir) + "_t*")
+
+_textureFloorsGroundFloat(facadeTexture, facadeDir) = float(getRange(_facadeTextureGround(facadeTexture, facadeDir), "_g",".jpg"))
+_textureFloorsGround(facadeTexture, facadeDir) = 
+	case _facadeTextureGround(facadeTexture, facadeDir) == "": 0
+	case _textureFloorsGroundFloat(facadeTexture, facadeDir) <= 0: 0
+	else: _textureFloorsGroundFloat(facadeTexture, facadeDir)
+
+_textureFloorsTopFloat(facadeTexture, facadeDir) = float(getRange(_facadeTextureTop(facadeTexture, facadeDir), "_t",".jpg"))
+_textureFloorsTop(facadeTexture, facadeDir) = 
+	case _facadeTextureTop(facadeTexture, facadeDir) == "": 0
+	case _textureFloorsTopFloat(facadeTexture, facadeDir) <= 0: 0
+	else: _textureFloorsTopFloat(facadeTexture, facadeDir)
+
+################
+
+#XX
+
+# Use this from importing rule.
+BuildingMultipatch(thisTexture, thisFacadeDirectory, thisFloorCount, thisFloorHeight, thisFacadeHorizontalOffset) -->
+	set(_InputShape, "Multipatch")
+	# These four attributes are required from importing rule, or test rule.
+	set(_thisTexture, thisTexture)
+	set(_thisFacadeDirectory, thisFacadeDirectory)
+	set(_thisFloorCount, thisFloorCount)
+	set(_thisFloorHeight, thisFloorHeight)
+	set(_thisTexture_Horizontal_Offset, thisFacadeHorizontalOffset)
+	
+	
+	# The remaining internal attributes can be set based on the above four inputs.
+	SetInternalAttributes
+
+
+
+
+/*  
+Show_Texture_Guides = false
+
+ShowTextureGuides -->
+	case Show_Texture_Guides:
+		offset(guideThickness)
+		comp(f) {border: FloorGuide(1)}
+	else:
+		NIL
+
+const guideThickness = 1 
+
+	
+FloorGuide(floorIndex) -->
+	case floorIndex > _Floor_Count: NIL
+	else:
+		translate(rel, world, 0, _Floor_Height_Average, 0)
+		color(
+			case floorIndex == _textureFloorsGround: "#ff0000"
+			case floorIndex == _textureFloorsGround + otherFloorCountFinal: "#ff0000"
+			else: "#ffffff"
+		)
+		X.
+		FloorGuide(floorIndex + 1)
+
+*/	

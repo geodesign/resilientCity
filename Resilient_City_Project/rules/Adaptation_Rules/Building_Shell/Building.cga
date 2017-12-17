@@ -1,0 +1,432 @@
+/**
+ * File:    Building.cga
+ * Created: 29 Sep 2014 21:34:20 GMT
+ * Author:  Chris Wilkins edited by David Wasserman
+ * Details: ESRI Redlands Derivative Work
+ */
+
+version "2014.1"
+
+@Hidden
+import Three_Part_Texturing:"Referenced/Three_Part_Texturing.cga"
+
+@Hidden
+import BuildingReference:"Referenced/Building_Reference.cga" 
+
+
+###############################################
+# User CONSTANTS
+
+const facadeDirectory = "assets/BuildingTextures/Facades/" + typologyRemoveBlanks + "/"
+const roofDirectory = "assets/BuildingTextures/Roofs/Flat/"
+const modelFilePath = "/JLD_Data/assets/ColladaBuildings/"
+#const modelFilePath = "assets/ColladaBuildings/"
+
+# Redundant code here: (is also in Building Shell)
+typologyRemoveBlanks = case isBlank(typology): "Unknown" else: typology
+
+###############################################
+# Internal CONSTANTS
+
+const modelFileWithPath = modelFilePath + modelFile
+const modelFileExists = fileExists(modelFileWithPath)
+const defaultLevelHeight = 3.5
+
+###############################################
+# ATTR: Building Form
+
+# CIM Usages, but user can expand with additional entries for example: 
+# Single Family Craftsman Home, Row House, Residential Tower, 
+# Office Building, Primary School. 
+# Unknown is the default.
+# Typology gives a default usage profile.
+@Description("The style of the building that determines which library of textures to use. It also pre-sets several attributes across the rule, including Floor_Height, Roof_Type, and the Usage Profile.")
+@Group("Building Form",10) @Order(10)
+@Range("Agriculture", "Assembly", "Education", "Industrial", "Retail", "Office", "Public", "Residential", "Service", "Storage", "Transportation", "Utility", "Unknown", "Residential_Tower_Over_Retail", "Mixed_Use_Tower", "Vertical_Farm", "MRT_Station")
+attr typology = "Unknown"
+
+#@Handle("shape=BuildingExtrusionHandle axis=y")
+@Description("Total height in meters. If model is present, its height overrides this value.")
+@Range(1,300)
+@Group("Building Form") @Order(20)
+attr totalHeight = 70
+
+#@Handle("shape=FloorSplit axis=y")
+@Description("Floor-to-floor height in meters.")
+@Range(0.1,6.1)
+@Group("Building Form") @Order(30)
+attr levelHeight = defaultLevelHeight
+
+@Description("The number of stories in each building (above ground).")
+@Range(1,60)
+@Group("Building Form") @Order(40)
+@Hidden
+attr levelsAboveGround = 0 
+	
+@Description("The number of stories in each building (above ground).")
+@Range(1,6)
+@Group("Building Form") @Order(50)
+@Hidden
+attr levelsBelowGround = 0
+
+
+#XX?
+const eaveHeight = levelsAboveGround * levelHeight
+
+
+############################################
+# ATTR: Display
+
+@Group("Display",20) @Order(10)
+@Description("Visual display of building colors or textures.")
+@Range("Wall Surface Flooded","Textured","Usage","Values 0 to 1", "Values 1 to 9")#"Flood Risk"
+# CW thought this up, but we don't need now:  "Raster color sample")
+attr representation = "Wall Surface Flooded"
+
+@Group("Display") @Order(20)
+@Description("LOD gives lowest or highest detail based on start shape.")
+@Range("Low LOD", "High LOD")
+@Hidden
+attr levelOfDetail = "High LOD"
+
+############################################
+# ATTR: For Models
+
+@Description("Name of the geospecific model in the assets/Building_Models folder.")
+@Group("For Models",25) @Order(60)
+@File
+attr modelFile = ""
+
+@Description("GFA for geospecific model. User must supply value. If value is <=0 then it will not calculate metrics.")
+@Group("For Models") @Order(70)
+@Range(0,100000)
+attr modelGFAOverride = -1
+
+@Description("Name of the geospecific model in the assets/Building_Models folder.")
+@Group("For Models") @Order(80)
+@Range("From Original Model", "From Typology")
+attr textureSource = "From Original Model"
+
+############################################
+# ATTR: Texturing
+
+@Group("Texturing",30) @Order(20)
+@Decription("Randomly selected path in the correct Typology Folder, or user specified.")
+@File
+attr facadeTexture = Three_Part_Texturing.getFacadeTexture( levelsAboveGround , facadeDirectory)
+
+@Group("Texturing") @Order(30)
+@Description("Manual X offset to help align textures.")
+@Range(-10.1,10.1)
+attr facadeHorizontalOffset = 0
+
+@Group("Texturing") @Order(40)
+@Decription("Randomly selected path in the Roofs folder, or user specified.")
+@File
+attr roofTexture = fileRandom(roofDirectory + "*.jpg")
+
+@Hidden
+@Description("Form of roof.")
+@Group("Texturing") @Order(50)
+@Range("Standard", "Standard, High LOD", "Green", "Trees, Low LOD", "Trees, High LOD", "Garden, Low LOD", "Garden, High LOD", "Solar")
+attr roofType = "Standard" 
+
+
+############################################
+# ATTR: Reporting
+
+@Group("Reporting", 100) @Order(10)
+@Description("User defined unique ID. May be pre-existing on a footprint, or set on newly created buildings. Used so that buildings are represented in Reports/Dashboards.")
+attr buildingFID = ""
+
+@Group("Reporting") @Order(20)
+@Description("Unique ID for parcel containing building. May be layer mapped to existing GIS features.")
+attr parcelFID = ""
+
+#@Group("Reporting") @Order(30)
+#@Description("Unique ID for arbitrary enclosing area, such as a land use polygon. May be layer mapped to existing GIS features.")
+#attr demandFID = ""
+
+@Group("Reporting") @Order(40)
+@Description("For mapping to a raster layer.")
+@Range(0,1)
+attr values0To1 = 0
+
+@Group("Reporting") @Order(50)
+@Description("Mapping to an object attribute, or a layer map to another layer.")
+@Range(1,2,3,4,5,6,7,8,9)
+attr values1To9 = 1
+
+#Flood Data
+@Group("Flood Data",120)
+@Order(10) @Description("Designed to sample a raster or object attribute that references to the elevation above sea level that the building footprint will sit on.")#Grade? Streets?
+attr Grade_Elevation=scope.elevation
+@Order(11) @Description("Designed to sample a raster or object attribute that references to the elevation above sea level that flood waters are expected to reach.")
+attr Base_Flood_Elevation=0
+@Order(12)@Description("Freeboard is a factor of safety usually expressed in feet above a flood level for purposes of floodplain management.-FEMA This attribute can be mapped, but defaults to 1 foot.")
+attr Free_Board_Requirement=.3048
+##################################################
+##################################################
+# RULES
+
+# Start Rule Note: Footprints with multiple faces are not compatible with this rule.
+
+TEMPLevels = totalHeight / levelHeight
+const Footprint_Area = geometry.area 
+Total_GFA =  
+	case modelFileExists && modelGFAOverride > 0: modelGFAOverride
+	else: Footprint_Area * TEMPLevels
+
+@StartRule
+Building -->
+	set(BuildingReference.Base_Flood_Elevation,Base_Flood_Elevation)
+	set(BuildingReference.Grade_Elevation,Grade_Elevation)
+	set(BuildingReference.Free_Board_Requirement,Free_Board_Requirement)
+	# This is a footprint.
+	# Align scope to yUp. 
+	alignScopeToAxes(y)
+	# Squash scope of footprint to make it flat.
+	s('1,0,'1)
+	# Cleanup in case the user imported strange footprints. 
+	cleanupGeometry(edges, 0.1) #XX?
+	# For dashboard:
+	report("Building_FID", buildingFID )
+	report("Parcel_FID", parcelFID )
+	#report("Demand_FID", _Demand_FID )
+	BuildingReference.Usage_Typology.ReportUsages(Total_GFA, 1)
+	#UsageVisual
+	print(modelFileWithPath)
+	FootprintModelDispatch
+
+
+#totalHeight levelsAboveGround levelsBelowGround levelHeight eaveHeight
+
+# The extruded building without model, has easier height logic here.
+
+
+
+
+
+FootprintModelDispatch -->
+	case modelFileExists:
+		#print("model")
+		BuildingModel
+	else:
+		#print("extr")
+		BuildingExtrusion
+	
+BuildingModel -->
+	# Footprint shape has a model file, so insert the model here.
+	# The models are oriented relative to xyz-space.
+	alignScopeToAxes()							
+	# Scale footprint to point for model insertion, so model dimensions will be used.
+	s(0,0,0)
+	# Move the model based on x and z translation of original model file. 
+	t(-assetInfo(modelFileWithPath,tx), 0, -assetInfo(modelFileWithPath,tz))
+	# Insert model into scene.
+	i(modelFileWithPath)
+	# Merge coplanar faces and drop edges if possible.
+	cleanupGeometry(edges, 0.1)
+	# Reverse Normals is if necessary - depends on model source.
+	reverseNormals
+	# Handle color and texture in new rule, just to simplify.
+	ColoredOrTexturedModel
+
+ColoredOrTexturedModel -->
+	case representation == "Textured":
+		# For when Model exists.
+		ModelTextureOverride
+	else:
+		deleteUV(0)
+		BuildingReference.ColoredBuilding
+	
+
+ModelTextureOverride -->
+	case textureSource == "From Original Model":
+		X.
+	else:
+		Three_Part_Texturing.BuildingMultipatch(
+		 facadeTexture , facadeDirectory, _multipatchFloorCount, _multipatchFloorHeight, facadeHorizontalOffset )
+
+#############
+
+
+
+BuildingExtrusion -->
+	# No model exists for this footprint, so use extrusion.
+	# And height is variable here since no model exists.
+	extrude(totalHeight)
+	#BuildingExtrusionDisplay
+	BuildingExtrusionHandle
+	
+BuildingExtrusionHandle -->
+	# Handle was cut due to performance problems.
+	BuildingExtrusionDisplay
+	
+BuildingExtrusionDisplay -->
+	case representation == "Textured":
+		print(levelsAboveGround)
+		Three_Part_Texturing.BuildingMultipatch(
+		 facadeTexture , facadeDirectory, _multipatchFloorCount, _multipatchFloorHeight, facadeHorizontalOffset )
+		#XX Roof - this should be handled in above call now.
+		# but I don't think it is yet.
+	else:
+		BuildingReference.ColoredBuilding
+
+
+# XX HUH???? 
+ 
+#totalHeight levelsAboveGround levelsBelowGround levelHeight eaveHeight
+levelHeightFinal = levelHeight 
+
+extrusionOnlyTotalHeight = totalHeight  # Uses handle and is first step.
+/* 
+extrusionOnlyFloorCount =
+	case levelsAboveGround > 0: levelsAboveGround
+	else:
+extrusionOnlyFloorHeight = 
+	case levelsAboveGround <= 0: levelHeight
+	else:
+*/ 
+_multipatchFloorCount = rint(scope.sy / levelHeight ) #????????????
+_multipatchFloorHeight = scope.sy / _multipatchFloorCount #??????????
+
+
+
+
+/*
+const borderColor = "#000000"
+const border = 0.05
+const transparency = 0.5
+
+Outline -->
+	case levelOfDetail == "High LOD": 
+		offset(-border)
+		comp(f) {
+			inside:	X. |
+			border: color(borderColor) X.
+		}
+	else:
+		X.
+*/
+
+
+###############################################
+# ROOF RULES 
+
+Roof -->
+	t(0, eaveHeight , 0)
+	RoofStandardDispatch
+
+	
+RoofStandardDispatch -->
+	case roofType == "Standard":
+		TextureRoof
+	else:
+		RoofEdge RoofGlass
+
+
+const parapetEdgeWidth = 0.5
+const parapetTopColor = "#303030"
+const parapetSideColor = "#999999"
+const parapetDepth = 0.25 
+const parapetGlassThickness = 0.05
+const parapetGlassColor = "#4f658c" 
+const parapetGlassTransparency = 0.5
+const parapetGlassHeight = 1.5
+
+RoofEdge -->
+	offset(-parapetEdgeWidth)
+	comp(f) {
+		border: ParapetTop | 
+		inside: RoofFloor 
+	}
+
+RoofGlass -->
+	case roofUsesNoGlass: NIL
+	else:
+		offset(-parapetEdgeWidth / 2, inside) 
+		offset(-parapetGlassThickness, border)
+		extrude(parapetGlassHeight)
+		color(parapetGlassColor)
+		set(material.opacity, 1 - parapetGlassTransparency)
+	
+ParapetTop -->
+	color(parapetSideColor)
+	
+
+
+
+RoofFloor -->
+	alignScopeToAxes(y)
+	t(0,-parapetDepth,0)
+	RoofDispatch
+	extrude(parapetDepth)
+	comp(f) {
+		side: reverseNormals color(parapetSideColor) X.
+	}
+
+@Hidden
+attr roofLOD = 3
+
+RoofDispatch -->
+	case roofType == "Standard, High LOD": TextureRoof
+	case roofType == "Green": GreenRoof
+	case roofType == "Trees, Low LOD": set(roofLOD,3) GreenRoofWithTrees
+	case roofType == "Trees, High LOD": set(roofLOD,4) GreenRoofWithTrees
+	case roofType == "Garden, Low LOD": set(roofLOD,3) GardenRoof
+	case roofType == "Garden, High LOD": set(roofLOD,4) GardenRoof
+	case roofType == "Solar": SolarRoof
+	else: TextureRoof
+
+roofUsesNoGlass = 
+	roofType == "Standard" || 
+	roofType == "Standard, High LOD" || 
+	roofType == "Solar"
+
+
+
+
+###############################################
+# Reference function
+
+# Tests if a value is any number of spaces or is empty string.
+isBlank(someString) = removeSpaces(someString) == ""
+
+# Recursive function calls itself, removing first space it finds, till it finds none.
+removeSpaces(someString) =
+	case find(someString," ",0) == -1: 
+		# There are no spaces. Just return the current value.
+		someString
+	else: 
+		case find(someString," ",0) == 0:
+			# It is the first character, just use rest of string.
+			removeSpaces(substring(someString,1,len(someString)))
+		case find(someString," ",0) == len(someString)-2:
+			# It is the last char.
+			removeSpaces(substring(someString,0,len(someString)-1))
+		else:
+			#str(find(someString," ",0))
+			# It is in the middle.
+			removeSpaces( 
+				substring(someString,0,find(someString," ",0)) +   
+				substring(someString,find(someString," ",0) + 1,len(someString))
+			)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	

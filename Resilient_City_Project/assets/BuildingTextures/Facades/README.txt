@@ -1,0 +1,1 @@
+These folders all contain the same files. You can find and replace these textures with your own for each of the typologies.

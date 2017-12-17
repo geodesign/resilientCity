@@ -1,0 +1,45 @@
+/**
+ * File:    Damage_Function_Lib.cga
+ * Created: 24 Jun 2017 22:20:27 GMT
+ * Author:  David Wasserman
+  *
+	Copyright 2016 David Joseph Wasserman & Geodesign Technologies
+	
+	This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+version "2016.1"
+
+######################
+#Const Declaration
+const toFt = 3.28084
+const header= "NumCodeText;NumCode;Description;Intensity_Class;General_Class;HAZUS_LU_Class;Building_Type_1;Building_Type_2;Building_Type_3"
+const DORUC_Codes="Vacant Residential;Single Family;Mobile Homes;Multi-family;Condominia;Cooperatives;Retirement Homes;Boarding Homes (Institutional);Multi-family less than 10 units;Undefined reserved for DOR;Vacant Commercial;Stores One-Story;Mixed Use, i.e., Store and Office;Department Stores;Department Stores;Regional Shopping Malls;Community Shopping Centers;One-Story Non-Professional Offices;Multi-Story Non-Professional Offices;Professional Service Buildings;Airports, Marinas, Bus Terminals, and Piers;Restaurants, Cafeterias;Drive-in Restaurants;Financial Institutions;Insurance Company Offices;Repair Service Shops;Service Stations;Automotive Repair, Service, and Sales;Parking Lots, Mobile Home Sales;Wholesale, Manufacturing, and Produce Outlets;Florist, Greenhouses;Drive-in Theaters, Open Stadiums;Enclosed Theaters, Auditoriums;Night Clubs, Bars, and Cocktail Lounges;Bowling Alleys, Skating Rings, Enclosed Arenas;Tourist Attractions;Camps;Race Horse, Auto, and Dog Tracks;Golf Courses;Hotels, Motels;Vacant Industrial;Light Manufacturing;Heavy Manufacturing;Lumber Yards, Sawmills, Planning Mills,;Fruit, Vegetables, and Meat Packing;Canneries, Distilleries, and Wineries;Other Food Processing;Mineral Processing;Warehouses, and Distribution Centers;Industrial Storage (Fuel, Equip, and Material);Improved Agriculture;Cropland Soil Class 1;Cropland Soil Class 2;Cropland Soil Class 3;Timberland;Timberland;Timberland;Timberland;Timberland;Timberland;Grazing Land Soil Class 1;Grazing Land Soil Class 2;Grazing Land Soil Class 3;Grazing Land Soil Class 4;Grazing Land Soil Class 5;Grazing Land Soil Class 6;Orchard, Groves, Citrus;Poultry, Bees, Tropical Fish, Rabbits, etc.;Dairies, Feed Lots;Ornamentals, Misc. Agriculture;Vacant Institutional;Churches;Private Schools;Private Hospitals;Homes for Aged;Orphanages;Mortuaries, Cemeteries;Clubs, Lodges, and Union Halls;Sanitariums, Convalescent, and Best Homes;Cultural Organizations;Undefined;Military;Forest, Park, and Recreational Areas;Public Schools;Colleges;Public Hospitals;Other Counties;Other State;Other Federal;Other Municipal;Gov. Owned Leased by Non-Gov. Lessee;Utilities;Mining, Petroleum, and Gas Lands;Subsurface Rights;Rights-of-Way Streets, Roads, and Canals;Rivers, Lakes, and Submerged Lands;Sewage Disposal, Borrow Pits, and Wetlands;Outdoor Recreational;Centrally Assessed;Acreage not Zoned for Agricultural"
+const Intensity_Class="Low-Rise;Low-Rise;Low-Rise;High-Rise;Mid-Rise;Mid-Rise;Mid-Rise;Mid-Rise;Mid-Rise;Low-Rise;Low-Rise;Low-Rise;High-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;High-Rise;Mid-Rise;Low-Rise;Low-Rise;Low-Rise;Mid-Rise;Mid-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Mid-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Mid-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Non-Intensive Use;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Mid-Rise;Mid-Rise;Mid-Rise;Mid-Rise;Mid-Rise;Mid-Rise;Mid-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise;Low-Rise"
+const HAZUS_Land_Use_Class = "IND6;RES1;RES2;RES3;RES3;RES3;RES3;RES3;RES3;RES1;IND6;COM1;COM4;COM1;COM1;COM1;COM1;COM3;COM4;COM4;COM9;COM8;COM8;COM5;COM5;COM3;COM3;COM3;COM10;COM2;COM2;COM9;COM9;COM8;COM8;COM8;RES4;COM8;COM8;RES4;IND6;IND2;IND1;IND1;IND3;IND3;IND3;IND4;COM2;IND1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;AGR1;IND6;REL1;EDU1;COM6;RES6;RES5;COM3;COM8;RES6;COM8;GOV1;GOV1;COM1;EDU1;EDU2;COM6;GOV1;GOV1;GOV1;GOV1;GOV1;GOV1;IND4;GOV1;GOV1;GOV1;GOV1;GOV1;GOV1;GOV1"
+const Building_Type_1 = "Wood;Wood;Mobile Home;Steel;Steel;Steel;Steel;Steel;Steel;Wood;Wood;Wood;Steel;Wood;Wood;Wood;Wood;Wood;Steel;Steel;Wood;Wood;Wood;Steel;Steel;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Steel;Wood;Wood;Wood;Wood;Wood;Steel;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Steel;Steel;Steel;Steel;Steel;Steel;Steel;Steel;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete"
+const Building_Type_2 = "Masonry;Masonry;Mobile Home;Concrete;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Concrete;Masonry;Masonry;Masonry;Masonry;Masonry;Concrete;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Masonry;Steel;Steel;Steel;Steel;Steel;Steel;Steel;Steel;Steel"
+const Building_Type_3 = "Concrete;Concrete;Wood;Masonry;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Masonry;Concrete;Concrete;Concrete;Concrete;Concrete;Masonry;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Concrete;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood;Wood"
+######################
+#Function Declaration
+getValueByDORUC(LU,column)= 
+	case listIndex(DORUC_Codes,LU)!=-1:
+		listItem(column,listIndex(DORUC_Codes,LU))
+	else:
+		listItem(column,listIndex(DORUC_Codes,"Cropland Soil Class 1"))
+    
+Lot-->
+	NIL
+#	print(getDamagePercent("COM8","Salt Water","Long Duration","Other Foundation",inund))
+#	color(getDamagePercent("COM8","Salt Water","Long Duration","Other Foundation",inund),0,0)
