@@ -90,6 +90,10 @@ attr color_range="whiteToBlue"
 @Range(true,false) @Description("Inverts color range by setting the value in the color ramp == 1- normalized data.")
 attr invert_color=false
 
+@Group("Display",40) @Order(30)@Range(0,1)
+@Description("Adjusts the alpha of the model.")
+attr transparency=0
+
 /*  
 @Group("Display") @Order(30)
 @Description("LOD gives lowest or highest detail based on start shape.")
@@ -179,7 +183,8 @@ attr Free_Board_Requirement=.3048
 # Start Rule Note: Footprints with multiple faces are not compatible with this rule.
 
 @StartRule
-BuildingShell -->  
+BuildingShell --> 
+#	comp(f) {bottom:Multipatch_Base} 
 	# This is a multipatch.
 	cleanupGeometry(edges, 0.1)
 	alignScopeToAxes(y)
@@ -188,6 +193,7 @@ BuildingShell -->
 	report("Parcel_FID", parcelFID )
 	#report("Demand_FID", _Demand_FID )
 	#USAGE_PROFILE.ReportUsages(Total_GFA, 1)
+	set(material.opacity,1-transparency)
 	BuildingReference.Usage_Typology.ReportUsages(modelGFA, 1)
 	#UsageVisual
 	BuildingShellDispatch
