@@ -1049,7 +1049,7 @@ Band_2-->
 	
 Door_Split(floornum,totalfloors,Location)-->
 	split(y) {~1:Door_Encasing(floornum,totalfloors,Location)
-	|'0.2:Color_Floor_Wall(floornum,totalfloors,Location)}
+	|'0.2:Floor_Material_Setup(floornum,totalfloors,"Wall")}
 	
 Door_Encasing(floornum,totalfloors,Location)--> 
 	Insert_Person_Rule
