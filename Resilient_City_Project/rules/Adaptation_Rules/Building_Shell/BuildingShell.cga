@@ -184,11 +184,11 @@ attr Free_Board_Requirement=.3048
 
 @StartRule
 BuildingShell --> 
-#	comp(f) {bottom:Multipatch_Base} 
 	# This is a multipatch.
 	cleanupGeometry(edges, 0.1)
 	alignScopeToAxes(y)
 	# For dashboard:
+	set(Grade_Elevation,scope.elevation)
 	report("Building_FID", buildingFID )
 	report("Parcel_FID", parcelFID )
 	#report("Demand_FID", _Demand_FID )
@@ -197,6 +197,16 @@ BuildingShell -->
 	BuildingReference.Usage_Typology.ReportUsages(modelGFA, 1)
 	#UsageVisual
 	BuildingShellDispatch
+	comp(f) { horizontal:Multipatch_Base(scope.elevation,Grade_Elevation)} 
+
+Multipatch_Base(elevation,grade)-->
+	case (elevation)<=(grade+.01):
+		report("Footprint Area (M^2)",geometry.area)
+		NIL
+	else:
+		NIL
+	
+	
 
 _multipatchFloorCount = rint(scope.sy / levelHeight ) 
 _multipatchFloorHeight = scope.sy / _multipatchFloorCount 
