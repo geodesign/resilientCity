@@ -275,7 +275,6 @@ _ZeroIf(num, target)=
 		0
 	else:
 		1
-
 _Maxof(num1,num2)= #Finds the max of two numbers
 	case num1>=num2:
 		num1
@@ -285,8 +284,7 @@ _Minof(num1,num2)= #Finds the min of two numbers
 	case num1<=num2:
 		num1
 	else:
-		num2	
-		
+		num2		
 _isEven(num)=
 	case num%2==0:
 		true

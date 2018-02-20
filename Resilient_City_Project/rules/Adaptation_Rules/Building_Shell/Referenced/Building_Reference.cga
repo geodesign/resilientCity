@@ -35,7 +35,9 @@ attr values0To1 = 0
 @Hidden
 attr values1To9 = 1
 @Hidden
-attr Grade_Elevation=scope.elevation
+attr Grade_Elevation=scope.elevation 
+@Hidden
+attr Footprint_Elevation = Grade_Elevation
 @Hidden
 attr Base_Flood_Elevation=0
 @Hidden
@@ -136,7 +138,7 @@ _multipatchFloorCount = rint(maxHeight/ levelHeight ) #????????????
 _multipatchFloorHeight = maxHeight / _multipatchFloorCount #??????????
 #Flood Functions		
 _DesignFloodHeight= Base_Flood_Elevation+Free_Board_Requirement		
-_FootPrintInundation=_DesignFloodHeight-Grade_Elevation
+_FootPrintInundation=_DesignFloodHeight-Footprint_Elevation
 _FloodedFloorCount=ceil(_FootPrintInundation/_multipatchFloorHeight)
 _DamageIndex=_FloodedFloorCount/_multipatchFloorCount
 _NonFloodWallColor=
@@ -145,7 +147,11 @@ _NonFloodWallColor=
 	else:
 		colorRamp("yellowToRed",(_DamageIndex))
 	
-
+_Maxof(num1,num2)= #Finds the max of two numbers
+	case num1>=num2:
+		num1
+	else:
+		num2
 
 ColorFloors -->
 	report("Flood: Damage Index (% of Flooded Floors)",_DamageIndex*100)
@@ -188,7 +194,7 @@ FloorDispatch(floorIndex, floorTotal) -->
 		# Now color floors according to usage.
 		FloorUsageSplittingSetup(floorIndex, floorTotal)
 Flood_Visualization(floorIndex,floorTotal)-->
-	case Grade_Elevation>(Base_Flood_Elevation-.01):
+	case Footprint_Elevation>(Base_Flood_Elevation-.01):
 		color("#aaaaaa")	
 	else: 
 		Flood_Damage_Cartography(floorIndex,floorTotal)

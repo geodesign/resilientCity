@@ -26,8 +26,56 @@ import Math:"Referenced/Math.cga"
 const facadeDirectory = "assets/BuildingTextures/Facades/" + typologyRemoveBlanks + "/"
 const roofDirectory = "assets/BuildingTextures/Roofs/Flat/"
 const modelFilePath = "assets/ColladaBuildings/"
+const stilt_width=.61
+const stilt_spacing=3
+const stilt_setback=2.5
+const first_Floor=1
+const oneInch=0.0254
+const roofEdgeHeight=24*oneInch
+const FreshWat_SpcWeig=64.4 #lb/ft^3
+const SaltWat_SpcWeig=64.0 #lb/ft^3
+#Stairs
+const Stair_Slope=.91 #(8.25 in high, 9 in run)
+const Stair_Height=0.2286
+const Stair_Run=0.20
+const Max_Stair_Setback=2
+const Landing_Width=2
+const Landing_Height=.28
+#Unit conversions
+const ToFt3=35.3147 #1 meter ^3 = 35.3 cubic feet
+const ToFt2=10.7639 #1 meter ^2 = 10.7 square feet
+const ToFt1=3.2808399 #1 meter = 3.28 ft
+const ToIn1=39.37 #1 meter = 39.37 in
+const Light_Gray="#d3d3d3"
+const Dark_Gray= "#939393"
+const Dark_Blue="#0a39FF"
+const NACTOPlanting="#B5DC98"
+const OtherCol="#FFFFFF"
+const ParkingStoreCol ="#8b8b8b"
+const ElseCol="#000000"
 
 typologyRemoveBlanks = case isBlank(typology): "Unknown" else: typology
+_multipatchFloorCount = rint(scope.sy / levelHeight ) 
+_multipatchFloorHeight = scope.sy / _multipatchFloorCount 
+_FloodedFloorCount=Math._Minof(rint(Base_Flood_Elevation/levelHeight),_multipatchFloorCount)
+_DamageIndex=_FloodedFloorCount/_multipatchFloorCount
+_DesignFloodHeight= Base_Flood_Elevation+Free_Board_Requirement		
+_Maxof(num1,num2)= #Finds the max of two numbers
+	case num1>=num2:
+		num1
+	else:
+		num2
+_Minof(num1,num2)= #Finds the min of two numbers
+	case num1<=num2:
+		num1
+	else:
+		num2
+
+_Door_Width_Usage=
+	case _multipatchFloorCount<=4:
+		6/ToFt1 
+	else:
+		12/ToFt1 
 
 ###############################################
 # ATTR: Building Form
@@ -169,13 +217,31 @@ attr values0To1 = 0
 @Range(1,2,3,4,5,6,7,8,9)
 attr values1To9 = rand(1,9)
 
-@Group("Flood Data",120)
+@Group("Flood Data",115)
 @Order(10) @Description("Designed to sample a raster or object attribute that references to the elevation above sea level that the building footprint will sit on.")#Grade? Streets?
 attr Grade_Elevation=scope.elevation
 @Order(11) @Description("Designed to sample a raster or object attribute that references to the elevation above sea level that flood waters are expected to reach.")
 attr Base_Flood_Elevation=0
 @Order(12)@Description("Freeboard is a factor of safety usually expressed in feet above a flood level for purposes of floodplain management.-FEMA This attribute can be mapped, but defaults to 1 foot.")
 attr Free_Board_Requirement=.3048
+
+@Group("ADAPTATION STRATEGIES","Relocate",120)
+@Order(1) @Range("true","false")@Description("Will remove any building from the lot, and replace it with a blank lot whose representation varies based on  the replace with attribute.")
+attr Relocate= "false"
+@Order(2) @Range("Natural","Parking/Storage","Vacant Lot")@Description("Replaces the building on the lot with a representation related to the choices available.")#Highest level FDOT Taxonomy? 
+attr Replace_With="Natural"
+
+@Group("ADAPTATION STRATEGIES","Elevate",130)
+@Order(1) @Range(0,10) @Description("Refers to the elevation the building will be raised if Elevate_Structure is not none. Starts out equal to Flood Design Height (Free Board Requ. + Expected Flood Depth).")#Street Level elevation? Street? Add a Grade_Elevation?
+attr Elevation_Height=_Maxof((_DesignFloodHeight-.001)-Grade_Elevation,0)
+@Order(2) @Range("None","Solid Raise","Piling") @Description("Determines how the structure is elevated either by a solid concrete raise or pilings supporting the building.")
+attr Elevate_Structure="None"
+
+
+@Group("ADAPTATION STRATEGIES","Dry Proof","Deployable Flood Barriers",140)
+@Order(1) @Range("None", "Building") @Description("Building option will create a wall up to the elevation height around the building footprint, and the block will only create a wall around the street front area at the edge of the lot.")
+attr Deployable_Flood_Barriers="None"
+
 ##################################################
 ##################################################
 # RULES
@@ -195,32 +261,41 @@ BuildingShell -->
 	#USAGE_PROFILE.ReportUsages(Total_GFA, 1)
 	set(material.opacity,1-transparency)
 	BuildingReference.Usage_Typology.ReportUsages(modelGFA, 1)
-	#UsageVisual
-	BuildingShellDispatch
-	comp(f) { horizontal:Multipatch_Base(scope.elevation,Grade_Elevation)} 
-
+	Elevate_BuildingShell
+	
+Elevate_BuildingShell-->
+	#Elevation of building based on scenario, if no elevation, declare massing
+	case Elevate_Structure=="Solid Raise" || Elevate_Structure=="Piling":
+		comp(f) { horizontal:Multipatch_Base(scope.elevation,Grade_Elevation)} 
+		t(0,Elevation_Height,0)
+		set(BuildingReference.Footprint_Elevation,(Elevation_Height+Grade_Elevation))
+		BuildingShellDispatch
+	else: 
+		comp(f) { horizontal:Multipatch_Base(scope.elevation,Grade_Elevation)} 
+		BuildingShellDispatch
+		
+	
 Multipatch_Base(elevation,grade)-->
 	case (elevation)<=(grade+.01):
 		report("Footprint Area (M^2)",geometry.area)
-		NIL
+		alignScopeToAxes(y)
+		Deployable_Flood_Bar("Foot Print")
+		ActualFootPrint
 	else:
 		NIL
-	
-	
+		
 
-_multipatchFloorCount = rint(scope.sy / levelHeight ) 
-_multipatchFloorHeight = scope.sy / _multipatchFloorCount 
-_FloodedFloorCount=Math._Minof(rint(Base_Flood_Elevation/levelHeight),_multipatchFloorCount)
-_DamageIndex=_FloodedFloorCount/_multipatchFloorCount
 
 BuildingShellDispatch -->
+	case bool(Relocate):
+		NIL
 	case representation == "Textured":
 		# Using the texture of the original model.
 		X.
 	case representation == "Procedural Textures":
 		# Using typology-based texturing. 
 		Three_Part_Texturing.BuildingMultipatch(
-		 facadeTexture , facadeDirectory, _multipatchFloorCount, _multipatchFloorHeight, facadeHorizontalOffset )
+		facadeTexture , facadeDirectory, _multipatchFloorCount, _multipatchFloorHeight, facadeHorizontalOffset )
 	else:
 		# This multipatch is de-textured and sent to colored building rule. 
 		deleteUV(0)
@@ -253,10 +328,142 @@ removeSpaces(someString) =
 				substring(someString,find(someString," ",0) + 1,len(someString))
 			)
 
+#Adaptive Response
+Deployable_Flood_Bar(Location)-->
+	case _DesignFloodHeight<=0: #No flood barriers if Design Flood height is less than 0
+		NIL
+	case Deployable_Flood_Barriers=="None":
+		NIL
+	case Deployable_Flood_Barriers=="Building" && Location=="Foot Print":
+		offset(.35+_DesignFloodHeight*.1)
+		comp(f) {border:Wall_Deployment(Location)}
+	else:
+		NIL
+		print("Error or other trigger in deployable flood barrier rule")
 
+Wall_Deployment(Location)-->
+	report("Adaptive Measures.Deployable Flood Barrier Height",(_DesignFloodHeight))
+	extrude(Elevation_Height)
+	color(.6,.6,.6)
 
+ActualFootPrint-->
+	case bool(Relocate):
+		Replace_Building
+	else:
+		alignScopeToAxes(y)
+		reverseNormals
+		Elevate_Building
 
+Elevate_Building-->
+	#Elevation of building based on scenario, if no elevation, declare massing
+	case Elevate_Structure=="Solid Raise":
+		extrude(Elevation_Height)
+		comp(f){street.front:Stair_Side("Stair Side")|side: Cement("Solid Raise",Light_Gray)}
+	case Elevate_Structure=="Piling":
 
+		extrude (Elevation_Height)
+		comp(f){street.front:Stair_Side("Stair Side")|bottom: reverseNormals Piling_Subdivision_Setback("Raise",0)}
+	else: 
+		NIL
+		
+Replace_Building-->
+	case Replace_With=="Natural":
+		color(NACTOPlanting)
+	case Replace_With=="Parking/Storage":
+		color(ParkingStoreCol)
+	case Replace_With=="Vacant Lot":
+		color(ElseCol)
+	else:
+		color(OtherCol)
+		
+	
+Stair_Side(Location)-->
+	case scope.sx>=10/ToFt1:
+		case Elevate_Structure=="Solid Raise":
+			alignScopeToAxes(y)
+			split(x){~1:Cement("Solid Raise",Light_Gray)|
+					 (_Door_Width_Usage*1.5):Stair_Case_Rule(case Elevation_Height/Stair_Slope<Max_Stair_Setback:"Stair Out" else: "With Landing")|
+					 ~1:Cement("Solid Raise",Light_Gray)}
+		else:
+			alignScopeToAxes(y)
+			split(x){~1:NIL|
+				 (_Door_Width_Usage*1.5):Stair_Case_Rule(case Elevation_Height/Stair_Slope<Max_Stair_Setback:"Stair Out" else: "With Landing")|
+				 ~1:NIL}
+	else: 
+	 	NIL
+
+Stair_Case_Rule(Stair_Type)-->
+	case Stair_Type=="With Landing":
+		alignScopeToAxes(y)
+		reverseNormals
+		split(y) {~1:[case Elevate_Structure=="Solid Raise":Cement("Solid Raise",Light_Gray)else:NIL]|
+				 Landing_Height:Platform_Creation(Stair_Type) }
+	else:
+		alignScopeToAxes(y)
+		reverseNormals
+		split(y){~Stair_Height:Stair_Extrusion(Stair_Type,split.index,split.total)}*
+
+Stair_Extrusion(Stair_Type,stairNum,stairTotal)-->
+	reverseNormals
+	extrude(((stairTotal-stairNum)/ToFt1)*(1-Stair_Run))
+	comp(f) {top:Cement("Stairs",Light_Gray)|side:Cement("Stairs",Light_Gray)|bottom:Cement("Stairs",Light_Gray)}
+
+Platform_Creation(Stair_Type)-->
+	extrude(-Landing_Width)
+	Cement("Stairs",Light_Gray)
+	comp(f){3:Stairs_From_Platform(comp.index,Elevation_Height-Landing_Height)|
+			object.top:Piling_Subdivision("Platform Supports",Landing_Height)}
+
+Stairs_From_Platform(index,loop_counter)-->
+	case loop_counter>0:
+		alignScopeToAxes(y)
+		t(0,-Stair_Height,0)
+		extrude(Stair_Run)
+		Cement("Stairs",Light_Gray)
+		comp(f){1:Stairs_From_Platform(index,loop_counter-Stair_Height)}		
+	else:
+		NIL
+
+Piling_Subdivision(Location,Extrusion_Adjuster)-->
+	#declare piling splits for, creates grid squares
+	split(x){stilt_width:
+	split(y){stilt_width:Piling("Piling Raise",Extrusion_Adjuster)
+		|{~stilt_spacing:Cement("Under Piling",Light_Gray)
+		|stilt_width:Piling("Piling Raise",Extrusion_Adjuster)}*}
+			|{~stilt_spacing:Cement("Under Piling",Light_Gray)
+			|stilt_width:split(y){stilt_width:Piling("Piling Raise",Extrusion_Adjuster)
+			|{~stilt_spacing:Cement("Under Piling",Light_Gray)
+			|stilt_width:Piling("Piling Raise",Extrusion_Adjuster)}*}}*}
+			
+Piling_Subdivision_Setback(Location,Extrusion_Adjuster)-->
+	#declare piling splits for, creates grid squares
+	#print(geometry.isConcave)
+	case geometry.area()<10:
+		Cement("Under Piling",Light_Gray)
+	else:
+		setback(stilt_width,0){all:convexify Piling_Base_Setup ("Piling Raise",Extrusion_Adjuster)|remainder:
+		setback(stilt_spacing){all:Cement("Under Piling",Light_Gray)|remainder:Piling_Subdivision_Setback(Location,Extrusion_Adjuster)}}
+
+Piling_Base_Setup (Location,Extrusion_Adjuster)-->
+	alignScopeToAxes(y)
+	comp(f) {top:Piling_From_Wall(Location,Extrusion_Adjuster)}
+	
+Piling_From_Wall(Location,Extrusion_Adjuster)-->
+	alignScopeToGeometry(yUp,0,longest)
+	split(x) {stilt_width:Piling("Piling Raise",Extrusion_Adjuster)
+		|{~stilt_spacing:Cement("Under Piling",Light_Gray)
+		|stilt_width:Piling("Piling Raise",Extrusion_Adjuster)}*}	
+
+Piling(Location,Extrusion_Adjuster)-->
+	case geometry.nEdges!=4 || !geometry.isRectangular(20):
+		Cement("No Piling",Light_Gray)
+	else:
+		report("Adaptive Measures.Piling Volume (M^3)",geometry.area*Elevation_Height)
+		extrude(Elevation_Height-Extrusion_Adjuster)
+		Cement("Pilings",Light_Gray)
+		
+Cement(Location,Color)-->
+	color(Color)
 
 
 
