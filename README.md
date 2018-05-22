@@ -1,7 +1,7 @@
 # Resilient City Toolkit
 by David Wasserman, Geoff Taylor and Michael Flaxman
 
-![alt tag](https://github.com/geodesign/resilientCity/blob/master/Resilient_City_Project/images/CE2017.1_Demo_Scene.gif)
+![alt tag](https://github.com/geodesign/resilientCity/blob/master/CityEngine_Resilient_City_Project/images/CE2017.1_Demo_Scene.gif)
 
 ## Overview
 The Resilient City Toolkit contains a set of tools for visualizing risks to urban infrastructure, and for adapting urban forms to reduce such risks.  General methods include re-sighting, landscape-scale hazard mitigation, and building-scale adaptation.  The intial release contains tools primarily intended for flood resilience.  For resilience to flooding, we have implemented New York City, FEMA and EPA low impact development (LID) recommendations.
@@ -23,7 +23,7 @@ These tools are organized to follow a geodesign process.  The general idea is to
 
 ### Example of Interactive Exploration of Adaption Measures
 
-![alt tag](https://github.com/geodesign/resilientCity/blob/master/Resilient_City_Project/images/CE2017.1_Adaptation_Options.gif)
+![alt tag](https://github.com/geodesign/resilientCity/blob/master/CityEngine_Resilient_City_Project/images/CE2017.1_Adaptation_Options.gif)
 
 ## Outputs
 
