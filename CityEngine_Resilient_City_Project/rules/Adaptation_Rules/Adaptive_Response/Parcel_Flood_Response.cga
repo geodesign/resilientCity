@@ -774,7 +774,7 @@ FootPrint_GeometryCheck -->
 Footprint_SizeCheck-->
 	case geometry.nFaces > 1:
 		comp(f){all: alignScopeToAxes(y) Footprint_SizeCheck }
-	case scope.sx < 4 || scope.sz < 4:
+	case scope.sx < 1 || scope.sz < 1:
 		Green_Space_Start
 	else:
 		FootPrintFoundation
@@ -1253,8 +1253,8 @@ System_Insertion(floornum,totalfloors,System_Allocation,Location)-->
 		NIL
 Prepare_System_Space(floornum,totalfloors,System_Allocation,Location)-->
 	alignScopeToAxes(y)
-	t(1.5+Insert_Adjustment,0,1.5+Insert_Adjustment)
-	s(CS_len,0,CS_wid)
+	t((scope.sx/10),0,(scope.sz/10))
+	s(min(CS_len,scope.sx-1),0,min(CS_wid,scope.sz - 1))
 	System_Creation(floornum,totalfloors,System_Allocation)
 
 System_Creation(floornum,totalfloors,System_Allocation)-->
