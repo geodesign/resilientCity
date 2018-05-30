@@ -111,35 +111,35 @@ attr Roof_Type=case find(HAZUS_Land_Use_1,"RES",0)!=-1 && Floor_Count<=3:"Hip" e
 attr Front_Rear_Wing_Depth = (rand(9,12))
 @Order(9) @Range(0,20) @Description("Generally controls right and left depths for the L/U/O operations. For L, controls the left depth, for U and O controls left and right depth.")
 attr Right_Left_Wing_Depth = (rand(9,12))
-@Order(10) @Range(1,100)@Description("Total number of floors in the building. Is used by default to determine heights.")
-attr Floor_Count =_initialFloorCount(DORUC_Land_Use)
-@Order(11) @Range(1,10000)@Description("Zoning Height Limit of Building. If this is exceeded, a report will be triggered, and it will show as faded red above the building equal to the difference.")
+@Order(10) @Range(0,2000)  @Description("This is the starting height of the building. It determines the starting floor count and building height.")
+attr Building_Height	= _initialBuildingHeight(DORUC_Land_Use)
+@Order(11) @Range(1,100)@Description("Total number of floors in the building. Is used by default to determine heights.")
+attr Floor_Count = ceil(Building_Height/Floor_Height)
+@Order(12) @Range(1,10000)@Description("Zoning Height Limit of Building. If this is exceeded, a report will be triggered, and it will show as faded red above the building equal to the difference.")
 attr Height_Limit = _initialTotalHeight 
-@Order(12)@Range(0,5)@Description("Determines the height of the 1st floor of the building.")
-attr Ground_Floor_Height=3.75
-@Order(13)@Range(0,5)@Description("Determines the height of all floors other than the first floor.")
+@Order(13)@Range(0,5)@Description("Determines the height of the 1st floor of the building.")
+attr Ground_Floor_Height = 3.75
+@Order(15)@Range(0,5)@Description("Determines the height of all floors other than the first floor.")
 attr Floor_Height		=3.25
-@Order(14)@Range(0,10) @Description("Determines the setback of of each floor from the previous floor. Stops at some minimum size.")
+@Order(16)@Range(0,10) @Description("Determines the setback of of each floor from the previous floor. Stops at some minimum size.")
 attr Building_Setback=_intitalBuildingSetback
-@Order(15)@Range("From Street","Front","Back","Right and Left Side","All Sides")@Description("Determines the size of building setback for the building. The setbacks adjust based on the setback type.")
+@Order(17)@Range("From Street","Front","Back","Right and Left Side","All Sides")@Description("Determines the size of building setback for the building. The setbacks adjust based on the setback type.")
 attr Building_Setback_Side="From Street"
-@Order(16)@Range(1,20)@Description("This attribute controls the floors on which setbacks start, with the first floor starting at one.")
+@Order(18)@Range(1,20)@Description("This attribute controls the floors on which setbacks start, with the first floor starting at one.")
 attr Building_Setback_Floor=2
-@Order(17)@Range("Wedding Cake","Alternating","One Setback")@Description("Determines the type of building setback for the building.")
+@Order(19)@Range("Wedding Cake","Alternating","One Setback")@Description("Determines the type of building setback for the building.")
 attr Building_Setback_Type="Alternating"
-@Order(18) @Range(5,30) @Description("A parameter that determines the threshold for width and length before a building is no longer being setback.")
+@Order(20) @Range(5,30) @Description("A parameter that determines the threshold for width and length before a building is no longer being setback.")
 attr Setback_Size_Threshold =_initialSetbackThreshold
-@Order(19) @Hidden @Range(0,1000)  @Description("Max_Height of the total building, is by default determined by floor count.")
-attr Max_Height			= _initialHeight
-@Order(20) @Hidden @Range(0,100)  @Description("Height of the front base of the building before the building angles back with the Envelope function. Changing the front will change the side and rear too.")
+@Order(21) @Hidden @Range(0,100)  @Description("Height of the front base of the building before the building angles back with the Envelope function. Changing the front will change the side and rear too.")
 attr Front_Baseheight	=_initialBaseHeights
-@Order(21)@Hidden @Range(0,100) 	@Description("Hidden: Height of the rear base of the building before the building angles back with the Envelope function. Changing the front will change the side and rear too.")
+@Order(22)@Hidden @Range(0,100) 	@Description("Hidden: Height of the rear base of the building before the building angles back with the Envelope function. Changing the front will change the side and rear too.")
 attr Rear_Baseheight	=Front_Baseheight
-@Order(22)@Hidden @Range(0,100)	@Description("Hidden: Height of the side base of the building before the building angles back. Changing the front will change the side and rear too.")
+@Order(23)@Hidden @Range(0,100)	@Description("Hidden: Height of the side base of the building before the building angles back. Changing the front will change the side and rear too.")
 attr Side_Baseheight	=Front_Baseheight
-@Order(23)@Range(0,90)@Description("Determines the angle the building ascension inclines after the respective base heights are reached when evelopes are on, but when envelope are off it controls the angle of the roofs.")
+@Order(24)@Range(0,90)@Description("Determines the angle the building ascension inclines after the respective base heights are reached when evelopes are on, but when envelope are off it controls the angle of the roofs.")
 attr Roof_Angle = case Roof_Type=="Envelope":90 case Roof_Type=="Shed":2.5 else: 30
-@Order(24) @Range(0,10) @Description("Creates underground floors with heights equal to the Floor Height.")
+@Order(25) @Range(0,10) @Description("Creates underground floors with heights equal to the Floor Height.")
 attr Underfloors = 0
 
 @Group("ADAPTATION STRATEGIES","Relocate",6)
@@ -357,20 +357,20 @@ _initialFootprint = case find(HAZUS_Land_Use_1,"RES",0)!=-1: "L-Shaped"
 						else:"Square"
 
 _initialHeight=((Floor_Count_Abs-1)*Floor_Height)+Ground_Floor_Height
-_initialBaseHeights=Max_Height-Floor_Height*3
+_initialBaseHeights= Building_Height -Floor_Height*3
 _initialTotalHeight = _initialHeight + _DesignFloodHeight +.3048
 _Height_Limit_Exceedance = case Height_Limit - _initialTotalHeight > 0: 0 else:  abs(Height_Limit - _initialTotalHeight)
 
 					
-_initialFloorCount(LU)= 
+_initialBuildingHeight(LU)= 
 					case find(LU_SLR.getValueByDORUC(LU,LU_SLR.Intensity_Class),"Low",0)!=-1:
-						float(listRandom("1;1;1;1;1;1;2;2;2;3"))
+						float(listRandom("1;1;1;1;1;1;2;2;2;3"))*Floor_Height
 					case find(LU_SLR.getValueByDORUC(LU,LU_SLR.Intensity_Class),"Mid",0)!=-1:
-						float(listRandom("4;4;4;4;4;5;5;6;7"))
+						float(listRandom("4;4;4;4;4;5;5;6;7"))*Floor_Height
 					case find(LU_SLR.getValueByDORUC(LU,LU_SLR.Intensity_Class),"High",0)!=-1:
-						float(listRandom("8;8;8;8;8;8;8;9;9;10;11;12;13;14;15")	) 
+						float(listRandom("8;8;8;8;8;8;8;9;9;10;11;12;13;14;15")	)*Floor_Height
 					else:
-						float(listRandom("1;1;1;1;1;2"))
+						float(listRandom("1;1;1;1;1;2"))*Floor_Height
 					
 _initialSetBacks(setbackSide) = 
 					case find(HAZUS_Land_Use_1,"RES",0)!=-1  && Lot_Area>2000 && Floor_Count<=3: 

@@ -87,14 +87,16 @@ attr Use_2_Floors=0
 @Group("BUILDING","Buildable Volume",5)
 @Order(7) @Range("Flat", "Hip", "Gable", "Shed") @Description("Determines the roof types of the chosen building, or can be changed to an envelope that can be altered by a base height/setback angle.")
 attr Roof_Type="Flat"
-@Order(8) @Range(1,10000)@Description("Zoning Height Limit of Building. If this is exceeded, a report will be triggered, and it will show as faded red above the building equal to the difference.")
+@Order(8) @Range(0,2000)  @Description("This is the starting height of the building. It determines the starting floor count and building height.")
+attr Building_Height	= _initialOSMBuildingHeight((DORUC_Land_Use))
+@Order(9) @Range(1,100)@Description("Total number of floors in the building. Is used by default to determine heights.")
+attr Floor_Count = ceil(Building_Height/Floor_Height)
+@Order(10) @Range(1,2000) @Description("Zoning Height Limit of Building. If this is exceeded, a report will be triggered, and it will show as faded red above the building equal to the difference.")
 attr Height_Limit = _initialTotalHeight 
-@Order(10) @Range(1,100)@Description("Total number of floors in the building. Is used by default to determine heights.")
-attr Floor_Count =_initialOSMFloorCount(DORUC_Land_Use)
 @Order(11)@Range(0,5)@Description("Determines the height of the 1st floor of the building.")
-attr Ground_Floor_Height=3.75
+attr Ground_Floor_Height = 3.75
 @Order(12)@Range(0,5)@Description("Determines the height of all floors other than the first floor.")
-attr Floor_Height		=3.25
+attr Floor_Height		= 3.25
 @Order(13)@Range(0,10) @Description("Determines the setback of of each floor from the previous floor. Stops at some minimum size.")
 attr Building_Setback = 0
 @Order(14)@Range("From Street","Front","Back","Right and Left Side","All Sides")@Description("Determines the size of building setback for the building. The setbacks adjust based on the setback type.")
@@ -380,11 +382,11 @@ _getLevels =
 // Note: This quantity is not available for styles to override
 
 		
-_initialOSMFloorCount(LU)=
+_initialOSMBuildingHeight(LU)=
 					case _getLevels != 0:
-						_getLevels 
+						_getLevels*Floor_Height
 					else: 
-						_initialFloorCount(LU)
+						_initialFloorCount(LU)*Floor_Height
 _initialFloorCount(LU)= 
 					case find(LU_SLR.getValueByDORUC(LU,LU_SLR.Intensity_Class),"Low",0)!=-1:
 						float(listRandom("1;1;1;1;1;1;2;2;2;3"))
