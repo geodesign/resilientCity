@@ -1,0 +1,52 @@
+/**
+ * File:    Fire_Landscape_Management.cga
+ * Created: 1 Oct 2017 17:38:22 GMT
+ * Author:  David J. Wasserman
+ *
+	Copyright 2016 David Joseph Wasserman & Geodesign Technologies
+	
+	This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+version "2018.1"
+
+
+#Attributes
+@Group("DISPLAY SETTINGS","Representation",2)
+@Order(1)@Range("true","false")
+attr Display_Textures="true"
+@Order(2)@Range(0,1)
+attr Transparency=0
+
+
+
+#Constants
+const Flood_Wall_Assets = "FloodWallsAndBarriers"
+const Wall_Textures = Flood_Wall_Assets + "/WallTextures"
+const Concrete_Assets = Wall_Textures + "/Concrete"
+const Metal_Assets =Flood_Wall_Assets +"/MetalAndTops"
+const Light_Gray="#d3d3d3"
+const Dark_Gray= "#939393"
+const texturingOn=bool(Display_Textures)
+
+@StartRule
+Lot-->
+	Shape
+Shape-->
+	Landscape("Forest")
+
+Landscape(Location)-->
+    label(Location)
+    
+	
+	

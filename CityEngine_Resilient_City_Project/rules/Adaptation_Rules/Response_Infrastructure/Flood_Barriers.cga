@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-version "2017.1"
+version "2018.1"
 
 
 #Attributes
@@ -53,7 +53,7 @@ const Light_Gray="#d3d3d3"
 const Dark_Gray= "#939393"
 const texturingOn=bool(Display_Textures)
 
-
+@StartRule
 Lot-->
 	Shape
 Shape-->
