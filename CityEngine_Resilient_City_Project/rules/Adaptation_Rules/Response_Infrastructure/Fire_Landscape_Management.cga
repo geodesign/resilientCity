@@ -30,42 +30,90 @@ attr Display_Textures="true"
 @Order(2)@Range(0,1)
 attr Transparency=0
 @Group("LANDSCAPE SETTINGS","Ecosystem",2)
+@Handle(shape=Landscape, axis=y, type=selector,reference=center,slip=inside,occlusion=false,color="#FF6644") @Enum("Forest","Chaparral","Grassland")
 @Order(1)@Range("Forest","Chaparral","Grassland") @Description("General ecosystem type and composition.") 
 attr General_Ecosystem="Forest"
 @Group("LANDSCAPE SETTINGS","Vegetation",2)
 @Order(1)@Description("Species of the high tier trees. These are the tallest trees in an ecosystem.")@Range("Alder Buckthorn","Amazon Sword Plant","American Chestnut","American Sycamore","Apricot","Australian Pine","Baldcypress","Balsam Fir","Bamboo","Banana Tree","Basswood","Bay Laurel","Black Locust","Blue Gum Eucalyptus","Boxwood","Cabbage Palm Fern","California Bay","California Incense Cedar","California Palm","California Redwood","California Walnut","Coconut Palm","Common Hawthorn","Common Whitebeam","Conker Tree","Date Palm","Desert Willow","Douglas Fir","European Beech","European Larch","Ficus","Field Elm","Flannelbush","Flowering Dogwood","Giant Sequoia","Hedgehog Agave","Japanese Angelica Tree","Lacy Tree Philodendron","Leyland Cypress","Lily of the Valley","Lodgepole Pine","Mediterranean Buckthorn","Mexican Palmetto","Mountain Mahogany","Northern Red Oak","Norway Maple","Norway Spruce","Orange Tree","Orchid","Oval-leaved Privet","Palm Lily","Palo Verde","Paper Birch","Parlour Palm","Prickly Pear Cactus","Red Alder","Red Hickory","Rhododendron Azaleas","Rose","Ruffle Palm","Saguaro Cactus","Sassafras","Scots Pine","Sea Islands Yucca","Shadbush","Snake Plant","Southern Magnolia","Spanish Broom","Strawberry Tree","Sugar Maple","Sunflower","Sweetgum","Umbrella Acacia","Western Juniper","White Ash","White Oak","White Poplar","White Willow","Witch Hazel","","_____________________________","GENERICS","","Generic Dead Tree","Generic Stump","Generic Unknown","","_____________________________","PROXIES","","Algarrobo","American Elderberry","American Pepper","American Silverberry","Athel Tamarisk","Avocado","Black Tupelo","Buttonbush","Canada Buffaloberry","Chinaberry Tree","Chinese Tallow Tree","Common Hackberry","Common Holly","Common Persimmon","Desert Bitterbrush","European Hornbeam","Giant Chinquapin","Honey Locust","Hophornbeam","Huckleberry Shrub","Japanese Hemlock","Japanese Nutmeg","Judas Tree","Lawson Cypress","Loblolly Bay","Mexican Buckeye","Necklacepod","Northern Bilberry","Northern White Cedar","Octopus Tree","Osage Orange","Paper Bark Tree","Pawpaw","Persian Silk Tree","Princess Tree","Smooth Sumac","Sourwood","Southern Wax Myrtle","Tanoak","Tree of Heaven","Turkish Hazel","Western Soapberry","White Mulberry","Yellow Poplar","Yew")
-attr High_Tier_Tree_Species = "Scots Pine"
+attr High_Tier_Tree_Species = Default_High_Tier_Species(General_Ecosystem) 
 @Order(2)@Range(0,30)@Description("Mean top height of high tier trees in an ecosystem. These are the tallest trees in an ecosystem.")
 attr High_Tier_Tree_Height_Mean = Tree._heightMin(Tree._indexFromCommonName(High_Tier_Tree_Species))
 @Order(3)@Range(0,30)@Description("Deviation of height of high tier trees in an ecosystem. These are the tallest trees in an ecosystem.")
 attr High_Tier_Tree_Height_Deviation = High_Tier_Tree_Height_Mean/10
-@Order(4)@Range(0,30)@Description("Density of high tier trees in an ecosystem in trees per square meter. These are the tallest trees in an ecosystem.")
-attr High_Tier_Tree_Density = 10
+@Order(4)@Range(0,.1)@Description("Density of high tier trees in an ecosystem in trees per square meter. These are the tallest trees in an ecosystem.")
+attr High_Tier_Tree_Density = Default_High_Tier_Density(General_Ecosystem)
 @Order(5)@Description("Species of the low tier trees. These are the brush / small trees in an ecosystem.")@Range("Alder Buckthorn","Amazon Sword Plant","American Chestnut","American Sycamore","Apricot","Australian Pine","Baldcypress","Balsam Fir","Bamboo","Banana Tree","Basswood","Bay Laurel","Black Locust","Blue Gum Eucalyptus","Boxwood","Cabbage Palm Fern","California Bay","California Incense Cedar","California Palm","California Redwood","California Walnut","Coconut Palm","Common Hawthorn","Common Whitebeam","Conker Tree","Date Palm","Desert Willow","Douglas Fir","European Beech","European Larch","Ficus","Field Elm","Flannelbush","Flowering Dogwood","Giant Sequoia","Hedgehog Agave","Japanese Angelica Tree","Lacy Tree Philodendron","Leyland Cypress","Lily of the Valley","Lodgepole Pine","Mediterranean Buckthorn","Mexican Palmetto","Mountain Mahogany","Northern Red Oak","Norway Maple","Norway Spruce","Orange Tree","Orchid","Oval-leaved Privet","Palm Lily","Palo Verde","Paper Birch","Parlour Palm","Prickly Pear Cactus","Red Alder","Red Hickory","Rhododendron Azaleas","Rose","Ruffle Palm","Saguaro Cactus","Sassafras","Scots Pine","Sea Islands Yucca","Shadbush","Snake Plant","Southern Magnolia","Spanish Broom","Strawberry Tree","Sugar Maple","Sunflower","Sweetgum","Umbrella Acacia","Western Juniper","White Ash","White Oak","White Poplar","White Willow","Witch Hazel","","_____________________________","GENERICS","","Generic Dead Tree","Generic Stump","Generic Unknown","","_____________________________","PROXIES","","Algarrobo","American Elderberry","American Pepper","American Silverberry","Athel Tamarisk","Avocado","Black Tupelo","Buttonbush","Canada Buffaloberry","Chinaberry Tree","Chinese Tallow Tree","Common Hackberry","Common Holly","Common Persimmon","Desert Bitterbrush","European Hornbeam","Giant Chinquapin","Honey Locust","Hophornbeam","Huckleberry Shrub","Japanese Hemlock","Japanese Nutmeg","Judas Tree","Lawson Cypress","Loblolly Bay","Mexican Buckeye","Necklacepod","Northern Bilberry","Northern White Cedar","Octopus Tree","Osage Orange","Paper Bark Tree","Pawpaw","Persian Silk Tree","Princess Tree","Smooth Sumac","Sourwood","Southern Wax Myrtle","Tanoak","Tree of Heaven","Turkish Hazel","Western Soapberry","White Mulberry","Yellow Poplar","Yew")
-attr Low_Tier_Tree_Species = "Scots Pine"
+attr Low_Tier_Tree_Species = Default_Low_Tier_Species(General_Ecosystem) 
 @Order(6)@Range(0,30)@Description("Mean top height of low tier trees in an ecosystem. These are the brush / small trees in an ecosystem.")
-attr Low_Tier_Tree_Height_Mean = Tree._heightMin(Tree._indexFromCommonName(Low_Tier_Tree_Species ))
+attr Low_Tier_Tree_Height_Mean = Tree._heightMin(Tree._indexFromCommonName(Low_Tier_Tree_Species ))/2
 @Order(7)@Range(0,30)@Description("Deviation of height of low tier trees in an ecosystem. These are the brush / small trees in an ecosystem.")
 attr Low_Tier_Tree_Height_Deviation = High_Tier_Tree_Height_Mean/10
-@Order(8)@Range(0,30)@Description("Density of low tier trees in an ecosystem in trees per square meter. These are the brush / small trees in an ecosystem.")
-attr Low_Tier_Tree_Density = 10
+@Order(8)@Range(0,.1)@Description("Density of low tier trees in an ecosystem in trees per square meter. These are the brush / small trees in an ecosystem.")
+attr Low_Tier_Tree_Density = Default_High_Tier_Density(General_Ecosystem)/1.5
 @Group("LANDSCAPE SETTINGS","Ground",3)
 @Order(1) @File() @Description("Texture choice for ecosystem.")
-attr Ground_Texture = Grass_Assets + "/Soil Small Stones.jpg"
+attr Ground_Texture = Default_Ground_Texture(General_Ecosystem)
 
 #Constants
 const GI_Assets = "GreenInfrastructure"
 const Grass_Assets = GI_Assets +"/Grass"
+const TreeCostAverage = 750 
 const Light_Gray="#d3d3d3"
 const Dark_Gray= "#939393"
 const NACTOPlanting="#B5DC98"
+const NACTOTransit="#AF4E57"
 const texturingOn=bool(Display_Textures)
 const _Texture_Switch		   = case bool(Display_Textures): 4 else: 0
+const Shape_Area = geometry.area(surface)
+
+Default_High_Tier_Species(Ecosystem) =
+	case Ecosystem == "Forest":
+		"Scots Pine"
+	case Ecosystem == "Chaparral":
+		"Prickly Pear Cactus"
+	case Ecosystem == "Grassland":
+		"Desert Bitterbrush"
+	else:
+		"Desert Bitterbrush"
+
+Default_High_Tier_Density(Ecosystem) = 
+	case Ecosystem == "Forest":
+		.01
+	case Ecosystem == "Chaparral":
+		.005
+	case Ecosystem == "Grassland":
+		.0005
+	else:
+		.0001
+
+Default_Low_Tier_Species(Ecosystem) =
+	case Ecosystem == "Forest":
+		"Scots Pine"
+	case Ecosystem == "Chaparral":
+		"Desert Bitterbrush"
+	case Ecosystem == "Grassland":
+		"Desert Bitterbrush"
+	else:
+		"Desert Bitterbrush"
+		
+Default_Ground_Texture(Ecosystem) =
+	case Ecosystem == "Forest":
+		Grass_Assets + "/Soil Small Stones.jpg"
+	case Ecosystem == "Chaparral":
+		Grass_Assets + "/Light Rye.jpg"
+	case Ecosystem == "Grassland":
+		Grass_Assets + "/Standard Grass.jpg"
+	else:
+		Grass_Assets + "/Standard Grass.jpg"
+#Functions
+Tree_Radius(Type, Height) = Tree._radius(Tree._indexFromCommonName(Type),Height)
 
 
+#Rules
 @StartRule
 Lot-->
 	Shape
+	print(Shape_Area)
 Shape-->
 	label(General_Ecosystem)
 	Landscape
@@ -90,7 +138,23 @@ Landscape_Allocation -->
 		
 Grassland_Allocation-->
 	Ground_Allocation
+Forest_Allocation-->
+	Ground_Allocation
+	High_Tier_Vegetation_Allocation
+	Low_Tier_Vegetation_Allocation
+Chaparral_Allocation-->
+	Ground_Allocation
+	High_Tier_Vegetation_Allocation
+	Low_Tier_Vegetation_Allocation
+	
+High_Tier_Vegetation_Allocation-->
+	scatter(surface, High_Tier_Tree_Density*Shape_Area, uniform) {Tree_Setup("High Tier",High_Tier_Tree_Species,High_Tier_Tree_Height_Mean)}
+Low_Tier_Vegetation_Allocation-->
+	scatter(surface, Low_Tier_Tree_Density*Shape_Area, uniform) {Tree_Setup("Low Tier",Low_Tier_Tree_Species,Low_Tier_Tree_Height_Mean)}
 
+Tree_Setup(Location,Species,Height)-->
+	Tree_Insert_Type(Location,Species,Height)
+	
 Ground_Allocation-->
 	setupProjection(0, scope.xz, 2, 2)
 	texture(Ground_Texture)
@@ -102,6 +166,23 @@ Ground_Allocation-->
 Pervious_Reporting-->
 	report("Vegetation.Pervious Area",geometry.area)
 	X.
-	 
+Tree_Insert_Type(Location,Tree_Type1,Tree_Height1)-->
+	case Tree_Height1<.001: #If Tree Height is reduced beyond a limit, remove tree. 
+		NIL
+	case texturingOn:
+		s(0,0,0)
+		report("Vegetation.Construction, Tree Cost",TreeCostAverage)
+		set(Tree.Name, Tree_Type1)
+		set(Tree.Height, Tree_Height1)
+		set(Tree.Radius,Tree_Radius(Tree_Type1,Tree_Height1))
+		Tree.Generate
+	else: #If Texturing is off, the tree texture is overrided to the current thematic color 
+		s(0,0,0)
+		report("Vegetation.Construction, Tree Cost",TreeCostAverage)
+		set(Tree.Name, Tree_Type1)
+		set(Tree.Height, Tree_Height1)
+		set(Tree.Radius,Tree_Radius(Tree_Type1,Tree_Height1))
+		set(Tree.OverwriteColor, case Location == "High Tier": NACTOPlanting else: NACTOTransit)
+		Tree.Generate	 
 	
 	
