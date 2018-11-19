@@ -172,6 +172,7 @@ Tree_Insert_Type(Location,Tree_Type1,Tree_Height1)-->
 	case texturingOn:
 		s(0,0,0)
 		report("Vegetation.Construction, Tree Cost",TreeCostAverage)
+		report("Tree."+str(Location)+" Count", 1)
 		set(Tree.Name, Tree_Type1)
 		set(Tree.Height, Tree_Height1)
 		set(Tree.Radius,Tree_Radius(Tree_Type1,Tree_Height1))
@@ -179,6 +180,7 @@ Tree_Insert_Type(Location,Tree_Type1,Tree_Height1)-->
 	else: #If Texturing is off, the tree texture is overrided to the current thematic color 
 		s(0,0,0)
 		report("Vegetation.Construction, Tree Cost",TreeCostAverage)
+		report("Tree."+str(Location)+" Count", 1)
 		set(Tree.Name, Tree_Type1)
 		set(Tree.Height, Tree_Height1)
 		set(Tree.Radius,Tree_Radius(Tree_Type1,Tree_Height1))
